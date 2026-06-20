@@ -1,0 +1,6 @@
+{
+  "name": "LAZ MDT Al Jihad",
+  "description": "Aplikasi pengelolaan amil zakat, infak, sedekah, dan wakaf yang transparan dan akuntabel, dilengkapi dengan kontrol 4 level hak akses, beranda publik, dan chatbot maskot cerdas Jihad Si Penjaga Amanah.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
