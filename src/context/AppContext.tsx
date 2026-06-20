@@ -4,6 +4,8 @@
  */
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { db } from '../firebase';
+import { collection, doc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
 import {
   UserRole,
   IncomingFund,
@@ -172,10 +174,117 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return saved ? JSON.parse(saved) : DEFAULT_COMPLAINTS;
   });
 
-  // Set default syncStatus to success (as we operate locally as requested)
+  // --- Real-time synchronization is established with Firebase Firestore ---
   useEffect(() => {
-    setSyncStatus('success');
-    setSyncErrorMessage(null);
+    const checkSuccess = () => {
+      setSyncStatus('success');
+      setSyncErrorMessage(null);
+    };
+
+    const handleError = (error: any) => {
+      console.error('Firestore listen error:', error);
+      setSyncStatus('error');
+      let msg = error?.message || String(error);
+      if (msg.includes('permission') || msg.includes('Permission')) {
+        msg = 'Aturan Keamanan (Security Rules) memblokir koneksi. Pastikan tab "Rules" proyek Firebase Anda ("laz-mdt-aljihad") disetel ke: allow read, write: if true;';
+      } else if (msg.includes('unavailable') || msg.includes('Failed to get document')) {
+        msg = 'Koneksi ke Firestore cloud gagal atau offline. Pastikan Firestore Database telah dibuat di proyek Firebase "laz-mdt-aljihad".';
+      }
+      setSyncErrorMessage(msg);
+    };
+
+    const unsubscribes = [
+      onSnapshot(collection(db, 'incoming_funds'), (snapshot) => {
+        const list: IncomingFund[] = [];
+        snapshot.forEach((doc) => {
+          list.push(doc.data() as IncomingFund);
+        });
+        // Sort newest first
+        list.sort((a, b) => b.id.localeCompare(a.id));
+        setIncomingFunds(list);
+        localStorage.setItem('laz_incoming_funds_v2', JSON.stringify(list));
+        checkSuccess();
+      }, (error) => {
+        handleError(error);
+      }),
+
+      onSnapshot(collection(db, 'outgoing_funds'), (snapshot) => {
+        const list: OutgoingFund[] = [];
+        snapshot.forEach((doc) => {
+          list.push(doc.data() as OutgoingFund);
+        });
+        list.sort((a, b) => b.id.localeCompare(a.id));
+        setOutgoingFunds(list);
+        localStorage.setItem('laz_outgoing_funds_v2', JSON.stringify(list));
+        checkSuccess();
+      }, (error) => {
+        handleError(error);
+      }),
+
+      onSnapshot(collection(db, 'beneficiaries'), (snapshot) => {
+        const list: Beneficiary[] = [];
+        snapshot.forEach((doc) => {
+          list.push(doc.data() as Beneficiary);
+        });
+        list.sort((a, b) => b.id.localeCompare(a.id));
+        setBeneficiaries(list);
+        localStorage.setItem('laz_beneficiaries_v2', JSON.stringify(list));
+        checkSuccess();
+      }, (error) => {
+        handleError(error);
+      }),
+
+      onSnapshot(collection(db, 'programs'), (snapshot) => {
+        const list: Program[] = [];
+        snapshot.forEach((doc) => {
+          list.push(doc.data() as Program);
+        });
+        if (snapshot.empty) {
+          // Initialize empty collection with default programs
+          DEFAULT_PROGRAMS.forEach((p) => {
+            setDoc(doc(db, 'programs', p.id), p).catch(err => console.error('Error seeding program:', err));
+          });
+          setPrograms(DEFAULT_PROGRAMS);
+        } else {
+          list.sort((a, b) => a.id.localeCompare(b.id));
+          setPrograms(list);
+          localStorage.setItem('laz_programs_v2', JSON.stringify(list));
+        }
+        checkSuccess();
+      }, (error) => {
+        handleError(error);
+      }),
+
+      onSnapshot(collection(db, 'audit_logs'), (snapshot) => {
+        const list: AuditLog[] = [];
+        snapshot.forEach((doc) => {
+          list.push(doc.data() as AuditLog);
+        });
+        list.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+        setAuditLogs(list);
+        localStorage.setItem('laz_audit_logs_v2', JSON.stringify(list));
+        checkSuccess();
+      }, (error) => {
+        handleError(error);
+      }),
+
+      onSnapshot(collection(db, 'complaints'), (snapshot) => {
+        const list: Complaint[] = [];
+        snapshot.forEach((doc) => {
+          list.push(doc.data() as Complaint);
+        });
+        list.sort((a, b) => b.id.localeCompare(a.id));
+        setComplaints(list);
+        localStorage.setItem('laz_complaints_v2', JSON.stringify(list));
+        checkSuccess();
+      }, (error) => {
+        handleError(error);
+      }),
+    ];
+
+    return () => {
+      unsubscribes.forEach((unsub) => unsub());
+    };
   }, []);
 
   // Save changes to localStorage for persistent simulations
@@ -243,7 +352,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       entityId,
       details
     };
-    setAuditLogs(prev => [newLog, ...prev]);
+    setDoc(doc(db, 'audit_logs', id), newLog).catch(console.error);
   };
 
   // --- ACTIONS: BENDHAHARA (FINANCE) ---
@@ -257,7 +366,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       receiptNumber: rn
     };
     
-    setIncomingFunds(prev => [newFund, ...prev]);
+    setDoc(doc(db, 'incoming_funds', id), newFund).catch(console.error);
     writeLog(
       'CREATE',
       'INCOMING_FUND',
@@ -268,7 +377,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Update Program raised budget if matching
     const matchingProgram = programs.find(p => fund.description.toLowerCase().includes(p.title.toLowerCase()) || p.title.toLowerCase().includes(fund.description.toLowerCase()));
     if (matchingProgram) {
-      setPrograms(prev => prev.map(p => p.id === matchingProgram.id ? { ...p, raisedBudget: p.raisedBudget + fund.amount } : p));
+      setDoc(doc(db, 'programs', matchingProgram.id), {
+        ...matchingProgram,
+        raisedBudget: matchingProgram.raisedBudget + fund.amount
+      }).catch(console.error);
     }
   };
 
@@ -276,7 +388,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const original = incomingFunds.find(f => f.id === id);
     if (!original) return;
 
-    setIncomingFunds(prev => prev.map(f => f.id === id ? { ...f, ...updatedFields } : f));
+    const merged = { ...original, ...updatedFields };
+    setDoc(doc(db, 'incoming_funds', id), merged).catch(console.error);
     
     let changeDetails = `Mengubah Dana Masuk ID #${id}. Alasan: "${reason}". `;
     if (updatedFields.amount && updatedFields.amount !== original.amount) {
@@ -286,7 +399,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const matchingProgram = programs.find(p => original.description.toLowerCase().includes(p.title.toLowerCase()));
       if (matchingProgram) {
         const diff = (updatedFields.amount || 0) - original.amount;
-        setPrograms(prev => prev.map(p => p.id === matchingProgram.id ? { ...p, raisedBudget: Math.max(0, p.raisedBudget + diff) } : p));
+        setDoc(doc(db, 'programs', matchingProgram.id), {
+          ...matchingProgram,
+          raisedBudget: Math.max(0, matchingProgram.raisedBudget + diff)
+        }).catch(console.error);
       }
     }
     if (updatedFields.donorName && updatedFields.donorName !== original.donorName) {
@@ -303,7 +419,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const original = incomingFunds.find(f => f.id === id);
     if (!original) return;
 
-    setIncomingFunds(prev => prev.filter(f => f.id !== id));
+    deleteDoc(doc(db, 'incoming_funds', id)).catch(console.error);
     writeLog(
       'DELETE',
       'INCOMING_FUND',
@@ -314,7 +430,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Revert program raises
     const matchingProgram = programs.find(p => original.description.toLowerCase().includes(p.title.toLowerCase()));
     if (matchingProgram) {
-      setPrograms(prev => prev.map(p => p.id === matchingProgram.id ? { ...p, raisedBudget: Math.max(0, p.raisedBudget - original.amount) } : p));
+      setDoc(doc(db, 'programs', matchingProgram.id), {
+        ...matchingProgram,
+        raisedBudget: Math.max(0, matchingProgram.raisedBudget - original.amount)
+      }).catch(console.error);
     }
   };
 
@@ -326,7 +445,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       status: 'Pending' // Bendahara inputs, Ketua LAZ must approve/verify
     };
 
-    setOutgoingFunds(prev => [newFund, ...prev]);
+    setDoc(doc(db, 'outgoing_funds', id), newFund).catch(console.error);
     writeLog(
       'CREATE',
       'OUTGOING_FUND',
@@ -339,7 +458,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const original = outgoingFunds.find(f => f.id === id);
     if (!original) return;
 
-    setOutgoingFunds(prev => prev.map(f => f.id === id ? { ...f, ...updatedFields } : f));
+    const merged = { ...original, ...updatedFields };
+    setDoc(doc(db, 'outgoing_funds', id), merged).catch(console.error);
 
     let changeDetails = `Mengubah Rencana Penyaluran ID #${id}. Alasan: "${reason}". `;
     if (updatedFields.amount && updatedFields.amount !== original.amount) {
@@ -356,7 +476,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const original = outgoingFunds.find(f => f.id === id);
     if (!original) return;
 
-    setOutgoingFunds(prev => prev.filter(f => f.id !== id));
+    deleteDoc(doc(db, 'outgoing_funds', id)).catch(console.error);
     writeLog(
       'DELETE',
       'OUTGOING_FUND',
@@ -375,7 +495,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       registeredAt: new Date().toISOString().substring(0, 10)
     };
 
-    setBeneficiaries(prev => [newBeneficiary, ...prev]);
+    setDoc(doc(db, 'beneficiaries', id), newBeneficiary).catch(console.error);
     writeLog(
       'CREATE',
       'BENEFICIARY',
@@ -388,7 +508,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const original = beneficiaries.find(b => b.id === id);
     if (!original) return;
 
-    setBeneficiaries(prev => prev.map(b => b.id === id ? { ...b, ...updatedFields } : b));
+    const merged = { ...original, ...updatedFields };
+    setDoc(doc(db, 'beneficiaries', id), merged).catch(console.error);
     writeLog(
       'UPDATE',
       'BENEFICIARY',
@@ -401,7 +522,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const original = beneficiaries.find(b => b.id === id);
     if (!original) return;
 
-    setBeneficiaries(prev => prev.filter(b => b.id !== id));
+    deleteDoc(doc(db, 'beneficiaries', id)).catch(console.error);
     writeLog(
       'DELETE',
       'BENEFICIARY',
@@ -418,12 +539,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       raisedBudget: 0,
       allocatedBudget: 0
     };
-    setPrograms(prev => [...prev, newProg]);
+    setDoc(doc(db, 'programs', id), newProg).catch(console.error);
     writeLog('CREATE', 'PROGRAM', id, `Menambahkan rencana program kemaslahatan baru: "${program.title}".`);
   };
 
   const updateProgram = (id: string, updatedFields: Partial<Program>) => {
-    setPrograms(prev => prev.map(p => p.id === id ? { ...p, ...updatedFields } : p));
+    const original = programs.find(p => p.id === id);
+    if (!original) return;
+    const merged = { ...original, ...updatedFields };
+    setDoc(doc(db, 'programs', id), merged).catch(console.error);
   };
 
   // --- ACTIONS: KETUA LAZ (APPROVALS) ---
@@ -432,16 +556,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const original = outgoingFunds.find(f => f.id === id);
     if (!original) return;
 
-    setOutgoingFunds(prev => prev.map(f => f.id === id ? { 
-      ...f, 
+    const updated = { 
+      ...original, 
       status: 'Approved' as ApprovalStatus, 
       approvedBy: currentUser.name, 
       approvedAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
-    } : f));
+    };
+    setDoc(doc(db, 'outgoing_funds', id), updated).catch(console.error);
 
     // Increase programmatic allocated (realized) budget
     if (original.programId) {
-      setPrograms(prev => prev.map(p => p.id === original.programId ? { ...p, allocatedBudget: p.allocatedBudget + original.amount } : p));
+      const matchingProgram = programs.find(p => p.id === original.programId);
+      if (matchingProgram) {
+        setDoc(doc(db, 'programs', original.programId), {
+          ...matchingProgram,
+          allocatedBudget: matchingProgram.allocatedBudget + original.amount
+        }).catch(console.error);
+      }
     }
 
     writeLog(
@@ -456,12 +587,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const original = outgoingFunds.find(f => f.id === id);
     if (!original) return;
 
-    setOutgoingFunds(prev => prev.map(f => f.id === id ? { 
-      ...f, 
+    const updated = { 
+      ...original, 
       status: 'Rejected' as ApprovalStatus,
       approvedBy: currentUser.name,
       approvedAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
-    } : f));
+    };
+    setDoc(doc(db, 'outgoing_funds', id), updated).catch(console.error);
 
     writeLog(
       'REJECT',
@@ -494,7 +626,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       paymentMethod: method
     };
 
-    setIncomingFunds(prev => [newFund, ...prev]);
+    setDoc(doc(db, 'incoming_funds', id), newFund).catch(console.error);
     
     // Write log as public event
     const logId = `AUD${Math.floor(1000 + Math.random() * 9000)}`;
@@ -508,11 +640,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       entityId: id,
       details: `Menerima donasi publik online [${type}] dari ${donorName || 'Hamba Allah'} sebesar Rp ${amount.toLocaleString('id-ID')} via ${method}.`
     };
-    setAuditLogs(prev => [newLog, ...prev]);
+    setDoc(doc(db, 'audit_logs', logId), newLog).catch(console.error);
 
     // Update program Raised budget (distribute to general operasional or renovasi)
     const progToRaise = type === 'Wakaf' ? 'PRG02' /* renovasi */ : 'PRG01' /* operasional */;
-    setPrograms(prev => prev.map(p => p.id === progToRaise ? { ...p, raisedBudget: p.raisedBudget + amount } : p));
+    const matchingProgram = programs.find(p => p.id === progToRaise);
+    if (matchingProgram) {
+      setDoc(doc(db, 'programs', progToRaise), {
+        ...matchingProgram,
+        raisedBudget: matchingProgram.raisedBudget + amount
+      }).catch(console.error);
+    }
 
     return newFund;
   };
@@ -536,26 +674,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       isAnonymous
     };
 
-    setComplaints(prev => [newComplaint, ...prev]);
+    setDoc(doc(db, 'complaints', id), newComplaint).catch(console.error);
   };
 
   const respondToComplaint = (id: string, response: string) => {
-    setComplaints(prev => prev.map(c => c.id === id ? {
-      ...c,
-      status: 'Resolved',
+    const original = complaints.find(c => c.id === id);
+    if (!original) return;
+    const updated = {
+      ...original,
+      status: 'Resolved' as const,
       response,
       responseDate: new Date().toISOString().substring(0, 10)
-    } : c));
+    };
+    setDoc(doc(db, 'complaints', id), updated).catch(console.error);
   };
 
-  const resetToDefault = () => {
-    if (confirm('Apakah Anda yakin ingin memulihkan data bawaan awal LAZ? Semua simulasi data Anda saat ini akan dihapus.')) {
-      setPrograms(DEFAULT_PROGRAMS);
-      setIncomingFunds(DEFAULT_INCOMING_FUNDS);
-      setOutgoingFunds(DEFAULT_OUTGOING_FUNDS);
-      setBeneficiaries(DEFAULT_BENEFICIARIES);
-      setAuditLogs(DEFAULT_AUDIT_LOGS);
-      setComplaints(DEFAULT_COMPLAINTS);
+  const resetToDefault = async () => {
+    if (confirm('Apakah Anda yakin ingin memulihkan data bawaan awal LAZ? Semua simulasi data Anda saat ini di database cloud akan dihapus.')) {
+      // Clear Firestore collections
+      for (const item of incomingFunds) {
+        await deleteDoc(doc(db, 'incoming_funds', item.id)).catch(console.error);
+      }
+      for (const item of outgoingFunds) {
+        await deleteDoc(doc(db, 'outgoing_funds', item.id)).catch(console.error);
+      }
+      for (const item of beneficiaries) {
+        await deleteDoc(doc(db, 'beneficiaries', item.id)).catch(console.error);
+      }
+      for (const item of complaints) {
+        await deleteDoc(doc(db, 'complaints', item.id)).catch(console.error);
+      }
+      for (const item of auditLogs) {
+        await deleteDoc(doc(db, 'audit_logs', item.id)).catch(console.error);
+      }
+      // Overwrite programs with initial
+      for (const p of DEFAULT_PROGRAMS) {
+        await setDoc(doc(db, 'programs', p.id), p).catch(console.error);
+      }
       setCurrentRole('umum');
     }
   };
