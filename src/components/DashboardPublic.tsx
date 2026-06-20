@@ -11,7 +11,6 @@ import {
   Heart, 
   TrendingUp, 
   TrendingDown, 
-  DollarSign, 
   Download, 
   Phone, 
   MapPin, 
@@ -406,8 +405,8 @@ export const DashboardPublic: React.FC<{ onEnterPortal: () => void }> = ({ onEnt
                 </span>
                 <span className="text-[10px] text-gray-600 block mt-1">Saldo tersedia di rekening</span>
               </div>
-              <div className="h-12 w-12 bg-yellow-100 rounded-xl flex items-center justify-center border border-yellow-200">
-                <DollarSign className="text-amber-700 h-6 w-6" />
+              <div className="h-12 w-12 bg-yellow-100 rounded-xl flex items-center justify-center border border-yellow-200 select-none">
+                <span className="text-amber-700 font-black text-lg">Rp</span>
               </div>
             </div>
           </div>
