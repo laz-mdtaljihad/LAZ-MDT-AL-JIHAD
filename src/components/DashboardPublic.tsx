@@ -160,22 +160,6 @@ export const DashboardPublic: React.FC<{ onEnterPortal: () => void }> = ({ onEnt
     <div className="min-h-screen bg-[#f0f4f1] text-[#1a3c34] font-sans pb-16">
       {/* Top Banner & Marquee Header */}
       <MovingTitle />
-
-      {/* Sync Diagnosis Warning Banner */}
-      {syncStatus === 'error' && (
-        <div className="bg-red-600 text-white font-semibold text-xs px-4 py-2.5 shadow flex flex-col md:flex-row items-center justify-between gap-3 animate-pulse">
-          <div className="flex items-center gap-2">
-            <span className="font-bold uppercase tracking-wider bg-black/30 px-2 py-0.5 rounded text-[10px]">Peringatan Sinkronisasi Cloud:</span>
-            <span>{syncErrorMessage || 'Koneksi terputus dari database cloud.'}</span>
-          </div>
-          <button 
-            onClick={() => alert(`SINKRONISASI CLOUD GAGAL\n\nKendala: ${syncErrorMessage || 'Aturan keamanan memblokir.'}\n\nSOLUSI CARA MEMPERBAIKI:\n1. Buka Firebase Console proyek Anda ("laz-mdt-aljihad")\n2. Klik "Firestore Database" di menu kiri\n3. Buka tab "Rules" (Aturan Keamanan)\n4. Ubah isi aturan keamanan menjadi:\n\n   rules_version = '2';\n   service cloud.firestore {\n     match /databases/{database}/documents {\n       match /{document=**} {\n         allow read, write: if true;\n       }\n     }\n   }\n\n5. Klik "Publish"\n6. Muat ulang / Refresh halaman aplikasi ini.`)}
-            className="bg-black/25 hover:bg-black/40 text-white font-bold px-3 py-1 rounded text-[11px] transition whitespace-nowrap cursor-pointer"
-          >
-            Lihat Cara Memperbaiki 💡
-          </button>
-        </div>
-      )}
       
       {/* Navbar Container */}
       <header className="sticky top-0 z-30 bg-[#114232] border-b-4 border-[#FCDC2A] text-white shadow-soft">
@@ -187,22 +171,6 @@ export const DashboardPublic: React.FC<{ onEnterPortal: () => void }> = ({ onEnt
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-bold text-lg text-white block tracking-wide leading-none">LAZ MDT AL JIHAD</span>
-                {syncStatus === 'success' ? (
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                    Sync Aktif
-                  </span>
-                ) : syncStatus === 'error' ? (
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium bg-red-500/20 text-red-300 border border-red-500/30">
-                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
-                    Offline
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
-                    Connecting
-                  </span>
-                )}
               </div>
               <span className="text-[10px] font-mono uppercase tracking-widest text-[#FCDC2A] block mt-1">Garut • Amil Trusted</span>
             </div>

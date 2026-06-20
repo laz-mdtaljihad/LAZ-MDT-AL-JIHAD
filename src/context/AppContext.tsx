@@ -4,8 +4,6 @@
  */
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { db } from '../firebase';
-import { collection, doc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
 import {
   UserRole,
   IncomingFund,
@@ -174,123 +172,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return saved ? JSON.parse(saved) : DEFAULT_COMPLAINTS;
   });
 
-  // --- Real-time synchronization is established with Firebase Firestore ---
+  // Set default syncStatus to success (as we operate locally as requested)
   useEffect(() => {
-    const checkSuccess = () => {
-      setSyncStatus('success');
-      setSyncErrorMessage(null);
-    };
-
-    const handleError = (error: any) => {
-      console.error('Firestore listen error:', error);
-      setSyncStatus('error');
-      let msg = error?.message || String(error);
-      if (msg.includes('permission') || msg.includes('Permission')) {
-        msg = 'Aturan Keamanan (Security Rules) memblokir koneksi. Pastikan tab "Rules" proyek Firebase Anda ("laz-mdt-aljihad") disetel ke: allow read, write: if true;';
-      } else if (msg.includes('unavailable') || msg.includes('Failed to get document')) {
-        msg = 'Koneksi ke Firestore cloud gagal atau offline. Pastikan Firestore Database telah dibuat di proyek Firebase "laz-mdt-aljihad".';
-      }
-      setSyncErrorMessage(msg);
-    };
-
-    const unsubscribes = [
-      onSnapshot(collection(db, 'incoming_funds'), (snapshot) => {
-        const list: IncomingFund[] = [];
-        snapshot.forEach((doc) => {
-          list.push(doc.data() as IncomingFund);
-        });
-        // Sort newest first
-        list.sort((a, b) => b.id.localeCompare(a.id));
-        setIncomingFunds(list);
-        localStorage.setItem('laz_incoming_funds_v2', JSON.stringify(list));
-        checkSuccess();
-      }, (error) => {
-        handleError(error);
-      }),
-
-      onSnapshot(collection(db, 'outgoing_funds'), (snapshot) => {
-        const list: OutgoingFund[] = [];
-        snapshot.forEach((doc) => {
-          list.push(doc.data() as OutgoingFund);
-        });
-        list.sort((a, b) => b.id.localeCompare(a.id));
-        setOutgoingFunds(list);
-        localStorage.setItem('laz_outgoing_funds_v2', JSON.stringify(list));
-        checkSuccess();
-      }, (error) => {
-        handleError(error);
-      }),
-
-      onSnapshot(collection(db, 'beneficiaries'), (snapshot) => {
-        const list: Beneficiary[] = [];
-        snapshot.forEach((doc) => {
-          list.push(doc.data() as Beneficiary);
-        });
-        list.sort((a, b) => b.id.localeCompare(a.id));
-        setBeneficiaries(list);
-        localStorage.setItem('laz_beneficiaries_v2', JSON.stringify(list));
-        checkSuccess();
-      }, (error) => {
-        handleError(error);
-      }),
-
-      onSnapshot(collection(db, 'programs'), (snapshot) => {
-        const list: Program[] = [];
-        snapshot.forEach((doc) => {
-          list.push(doc.data() as Program);
-        });
-        if (snapshot.empty) {
-          // Initialize empty collection with default programs
-          DEFAULT_PROGRAMS.forEach((p) => {
-            setDoc(doc(db, 'programs', p.id), p).catch(err => console.error('Error seeding program:', err));
-          });
-          setPrograms(DEFAULT_PROGRAMS);
-        } else {
-          list.sort((a, b) => a.id.localeCompare(b.id));
-          setPrograms(list);
-          localStorage.setItem('laz_programs_v2', JSON.stringify(list));
-        }
-        checkSuccess();
-      }, (error) => {
-        handleError(error);
-      }),
-
-      onSnapshot(collection(db, 'audit_logs'), (snapshot) => {
-        const list: AuditLog[] = [];
-        snapshot.forEach((doc) => {
-          list.push(doc.data() as AuditLog);
-        });
-        list.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
-        setAuditLogs(list);
-        localStorage.setItem('laz_audit_logs_v2', JSON.stringify(list));
-        checkSuccess();
-      }, (error) => {
-        handleError(error);
-      }),
-
-      onSnapshot(collection(db, 'complaints'), (snapshot) => {
-        const list: Complaint[] = [];
-        snapshot.forEach((doc) => {
-          list.push(doc.data() as Complaint);
-        });
-        list.sort((a, b) => b.id.localeCompare(a.id));
-        setComplaints(list);
-        localStorage.setItem('laz_complaints_v2', JSON.stringify(list));
-        checkSuccess();
-      }, (error) => {
-        handleError(error);
-      }),
-    ];
-
-    return () => {
-      unsubscribes.forEach((unsub) => unsub());
-    };
+    setSyncStatus('success');
+    setSyncErrorMessage(null);
   }, []);
 
   // Save changes to localStorage for persistent simulations
   useEffect(() => {
     localStorage.setItem('laz_current_role_v2', currentRole);
   }, [currentRole]);
+
+  useEffect(() => {
+    localStorage.setItem('laz_incoming_funds_v2', JSON.stringify(incomingFunds));
+  }, [incomingFunds]);
+
+  useEffect(() => {
+    localStorage.setItem('laz_outgoing_funds_v2', JSON.stringify(outgoingFunds));
+  }, [outgoingFunds]);
+
+  useEffect(() => {
+    localStorage.setItem('laz_beneficiaries_v2', JSON.stringify(beneficiaries));
+  }, [beneficiaries]);
+
+  useEffect(() => {
+    localStorage.setItem('laz_programs_v2', JSON.stringify(programs));
+  }, [programs]);
+
+  useEffect(() => {
+    localStorage.setItem('laz_audit_logs_v2', JSON.stringify(auditLogs));
+  }, [auditLogs]);
+
+  useEffect(() => {
+    localStorage.setItem('laz_complaints_v2', JSON.stringify(complaints));
+  }, [complaints]);
 
   // Derived Active User profile mapping
   const getProfileForRole = (role: UserRole): UserProfile => {
@@ -311,7 +226,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const currentUser = getProfileForRole(currentRole);
 
   // Helper inside helper to easily write log
-  const writeLog = async (
+  const writeLog = (
     action: AuditLog['action'],
     entityType: AuditLog['entityType'],
     entityId: string,
@@ -328,12 +243,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       entityId,
       details
     };
-    await setDoc(doc(db, 'audit_logs', id), newLog);
+    setAuditLogs(prev => [newLog, ...prev]);
   };
 
   // --- ACTIONS: BENDHAHARA (FINANCE) ---
 
-  const addIncomingFund = async (fund: Omit<IncomingFund, 'id' | 'receiptNumber'>) => {
+  const addIncomingFund = (fund: Omit<IncomingFund, 'id' | 'receiptNumber'>) => {
     const id = `INC${Math.floor(100 + Math.random() * 900)}`;
     const rn = `KJS-2026-${Math.floor(1000 + Math.random() * 9000)}`;
     const newFund: IncomingFund = {
@@ -342,8 +257,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       receiptNumber: rn
     };
     
-    await setDoc(doc(db, 'incoming_funds', id), newFund);
-    await writeLog(
+    setIncomingFunds(prev => [newFund, ...prev]);
+    writeLog(
       'CREATE',
       'INCOMING_FUND',
       id,
@@ -353,19 +268,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Update Program raised budget if matching
     const matchingProgram = programs.find(p => fund.description.toLowerCase().includes(p.title.toLowerCase()) || p.title.toLowerCase().includes(fund.description.toLowerCase()));
     if (matchingProgram) {
-      await setDoc(doc(db, 'programs', matchingProgram.id), {
-        ...matchingProgram,
-        raisedBudget: matchingProgram.raisedBudget + fund.amount
-      });
+      setPrograms(prev => prev.map(p => p.id === matchingProgram.id ? { ...p, raisedBudget: p.raisedBudget + fund.amount } : p));
     }
   };
 
-  const updateIncomingFund = async (id: string, updatedFields: Partial<IncomingFund>, reason: string) => {
+  const updateIncomingFund = (id: string, updatedFields: Partial<IncomingFund>, reason: string) => {
     const original = incomingFunds.find(f => f.id === id);
     if (!original) return;
 
-    const merged = { ...original, ...updatedFields };
-    await setDoc(doc(db, 'incoming_funds', id), merged);
+    setIncomingFunds(prev => prev.map(f => f.id === id ? { ...f, ...updatedFields } : f));
     
     let changeDetails = `Mengubah Dana Masuk ID #${id}. Alasan: "${reason}". `;
     if (updatedFields.amount && updatedFields.amount !== original.amount) {
@@ -374,11 +285,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // Sync matching program if applies
       const matchingProgram = programs.find(p => original.description.toLowerCase().includes(p.title.toLowerCase()));
       if (matchingProgram) {
-        const diff = updatedFields.amount - original.amount;
-        await setDoc(doc(db, 'programs', matchingProgram.id), {
-          ...matchingProgram,
-          raisedBudget: matchingProgram.raisedBudget + diff
-        });
+        const diff = (updatedFields.amount || 0) - original.amount;
+        setPrograms(prev => prev.map(p => p.id === matchingProgram.id ? { ...p, raisedBudget: Math.max(0, p.raisedBudget + diff) } : p));
       }
     }
     if (updatedFields.donorName && updatedFields.donorName !== original.donorName) {
@@ -388,15 +296,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       changeDetails += `Kategori dana diubah ke [${updatedFields.type}]. `;
     }
 
-    await writeLog('UPDATE', 'INCOMING_FUND', id, changeDetails);
+    writeLog('UPDATE', 'INCOMING_FUND', id, changeDetails);
   };
 
-  const deleteIncomingFund = async (id: string, reason: string) => {
+  const deleteIncomingFund = (id: string, reason: string) => {
     const original = incomingFunds.find(f => f.id === id);
     if (!original) return;
 
-    await deleteDoc(doc(db, 'incoming_funds', id));
-    await writeLog(
+    setIncomingFunds(prev => prev.filter(f => f.id !== id));
+    writeLog(
       'DELETE',
       'INCOMING_FUND',
       id,
@@ -406,14 +314,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Revert program raises
     const matchingProgram = programs.find(p => original.description.toLowerCase().includes(p.title.toLowerCase()));
     if (matchingProgram) {
-      await setDoc(doc(db, 'programs', matchingProgram.id), {
-        ...matchingProgram,
-        raisedBudget: Math.max(0, matchingProgram.raisedBudget - original.amount)
-      });
+      setPrograms(prev => prev.map(p => p.id === matchingProgram.id ? { ...p, raisedBudget: Math.max(0, p.raisedBudget - original.amount) } : p));
     }
   };
 
-  const addOutgoingFund = async (fund: Omit<OutgoingFund, 'id' | 'status'>) => {
+  const addOutgoingFund = (fund: Omit<OutgoingFund, 'id' | 'status'>) => {
     const id = `OUT${Math.floor(100 + Math.random() * 900)}`;
     const newFund: OutgoingFund = {
       ...fund,
@@ -421,8 +326,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       status: 'Pending' // Bendahara inputs, Ketua LAZ must approve/verify
     };
 
-    await setDoc(doc(db, 'outgoing_funds', id), newFund);
-    await writeLog(
+    setOutgoingFunds(prev => [newFund, ...prev]);
+    writeLog(
       'CREATE',
       'OUTGOING_FUND',
       id,
@@ -430,12 +335,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
-  const updateOutgoingFund = async (id: string, updatedFields: Partial<OutgoingFund>, reason: string) => {
+  const updateOutgoingFund = (id: string, updatedFields: Partial<OutgoingFund>, reason: string) => {
     const original = outgoingFunds.find(f => f.id === id);
     if (!original) return;
 
-    const merged = { ...original, ...updatedFields };
-    await setDoc(doc(db, 'outgoing_funds', id), merged);
+    setOutgoingFunds(prev => prev.map(f => f.id === id ? { ...f, ...updatedFields } : f));
 
     let changeDetails = `Mengubah Rencana Penyaluran ID #${id}. Alasan: "${reason}". `;
     if (updatedFields.amount && updatedFields.amount !== original.amount) {
@@ -445,15 +349,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       changeDetails += `Penerima diubah dari "${original.receiverName}" ke "${updatedFields.receiverName}". `;
     }
 
-    await writeLog('UPDATE', 'OUTGOING_FUND', id, changeDetails);
+    writeLog('UPDATE', 'OUTGOING_FUND', id, changeDetails);
   };
 
-  const deleteOutgoingFund = async (id: string, reason: string) => {
+  const deleteOutgoingFund = (id: string, reason: string) => {
     const original = outgoingFunds.find(f => f.id === id);
     if (!original) return;
 
-    await deleteDoc(doc(db, 'outgoing_funds', id));
-    await writeLog(
+    setOutgoingFunds(prev => prev.filter(f => f.id !== id));
+    writeLog(
       'DELETE',
       'OUTGOING_FUND',
       id,
@@ -463,7 +367,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // --- ACTIONS: SEKRETARIS (BENEFICIARIES & PROGRAMS) ---
 
-  const addBeneficiary = async (beneficiary: Omit<Beneficiary, 'id' | 'registeredAt'>) => {
+  const addBeneficiary = (beneficiary: Omit<Beneficiary, 'id' | 'registeredAt'>) => {
     const id = `BEN${Math.floor(100 + Math.random() * 900)}`;
     const newBeneficiary: Beneficiary = {
       ...beneficiary,
@@ -471,8 +375,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       registeredAt: new Date().toISOString().substring(0, 10)
     };
 
-    await setDoc(doc(db, 'beneficiaries', id), newBeneficiary);
-    await writeLog(
+    setBeneficiaries(prev => [newBeneficiary, ...prev]);
+    writeLog(
       'CREATE',
       'BENEFICIARY',
       id,
@@ -480,13 +384,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
-  const updateBeneficiary = async (id: string, updatedFields: Partial<Beneficiary>) => {
+  const updateBeneficiary = (id: string, updatedFields: Partial<Beneficiary>) => {
     const original = beneficiaries.find(b => b.id === id);
     if (!original) return;
 
-    const merged = { ...original, ...updatedFields };
-    await setDoc(doc(db, 'beneficiaries', id), merged);
-    await writeLog(
+    setBeneficiaries(prev => prev.map(b => b.id === id ? { ...b, ...updatedFields } : b));
+    writeLog(
       'UPDATE',
       'BENEFICIARY',
       id,
@@ -494,12 +397,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
-  const deleteBeneficiary = async (id: string) => {
+  const deleteBeneficiary = (id: string) => {
     const original = beneficiaries.find(b => b.id === id);
     if (!original) return;
 
-    await deleteDoc(doc(db, 'beneficiaries', id));
-    await writeLog(
+    setBeneficiaries(prev => prev.filter(b => b.id !== id));
+    writeLog(
       'DELETE',
       'BENEFICIARY',
       id,
@@ -507,7 +410,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
-  const addProgram = async (program: Omit<Program, 'id' | 'raisedBudget' | 'allocatedBudget'>) => {
+  const addProgram = (program: Omit<Program, 'id' | 'raisedBudget' | 'allocatedBudget'>) => {
     const id = `PRG${Math.floor(100 + Math.random() * 900)}`;
     const newProg: Program = {
       ...program,
@@ -515,43 +418,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       raisedBudget: 0,
       allocatedBudget: 0
     };
-    await setDoc(doc(db, 'programs', id), newProg);
-    await writeLog('CREATE', 'PROGRAM', id, `Menambahkan rencana program kemaslahatan baru: "${program.title}".`);
+    setPrograms(prev => [...prev, newProg]);
+    writeLog('CREATE', 'PROGRAM', id, `Menambahkan rencana program kemaslahatan baru: "${program.title}".`);
   };
 
-  const updateProgram = async (id: string, updatedFields: Partial<Program>) => {
-    const original = programs.find(p => p.id === id);
-    if (!original) return;
-    const merged = { ...original, ...updatedFields };
-    await setDoc(doc(db, 'programs', id), merged);
+  const updateProgram = (id: string, updatedFields: Partial<Program>) => {
+    setPrograms(prev => prev.map(p => p.id === id ? { ...p, ...updatedFields } : p));
   };
 
   // --- ACTIONS: KETUA LAZ (APPROVALS) ---
 
-  const approveTransaction = async (id: string) => {
+  const approveTransaction = (id: string) => {
     const original = outgoingFunds.find(f => f.id === id);
     if (!original) return;
 
-    const updated = { 
-      ...original, 
+    setOutgoingFunds(prev => prev.map(f => f.id === id ? { 
+      ...f, 
       status: 'Approved' as ApprovalStatus, 
       approvedBy: currentUser.name, 
       approvedAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
-    };
-    await setDoc(doc(db, 'outgoing_funds', id), updated);
+    } : f));
 
     // Increase programmatic allocated (realized) budget
     if (original.programId) {
-      const matchingProgram = programs.find(p => p.id === original.programId);
-      if (matchingProgram) {
-        await setDoc(doc(db, 'programs', original.programId), {
-          ...matchingProgram,
-          allocatedBudget: matchingProgram.allocatedBudget + original.amount
-        });
-      }
+      setPrograms(prev => prev.map(p => p.id === original.programId ? { ...p, allocatedBudget: p.allocatedBudget + original.amount } : p));
     }
 
-    await writeLog(
+    writeLog(
       'APPROVE',
       'OUTGOING_FUND',
       id,
@@ -559,19 +452,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
-  const rejectTransaction = async (id: string) => {
+  const rejectTransaction = (id: string) => {
     const original = outgoingFunds.find(f => f.id === id);
     if (!original) return;
 
-    const updated = { 
-      ...original, 
+    setOutgoingFunds(prev => prev.map(f => f.id === id ? { 
+      ...f, 
       status: 'Rejected' as ApprovalStatus,
       approvedBy: currentUser.name,
       approvedAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
-    };
-    await setDoc(doc(db, 'outgoing_funds', id), updated);
+    } : f));
 
-    await writeLog(
+    writeLog(
       'REJECT',
       'OUTGOING_FUND',
       id,
@@ -602,7 +494,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       paymentMethod: method
     };
 
-    setDoc(doc(db, 'incoming_funds', id), newFund).catch(console.error);
+    setIncomingFunds(prev => [newFund, ...prev]);
     
     // Write log as public event
     const logId = `AUD${Math.floor(1000 + Math.random() * 9000)}`;
@@ -616,22 +508,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       entityId: id,
       details: `Menerima donasi publik online [${type}] dari ${donorName || 'Hamba Allah'} sebesar Rp ${amount.toLocaleString('id-ID')} via ${method}.`
     };
-    setDoc(doc(db, 'audit_logs', logId), newLog).catch(console.error);
+    setAuditLogs(prev => [newLog, ...prev]);
 
     // Update program Raised budget (distribute to general operasional or renovasi)
     const progToRaise = type === 'Wakaf' ? 'PRG02' /* renovasi */ : 'PRG01' /* operasional */;
-    const matchingProgram = programs.find(p => p.id === progToRaise);
-    if (matchingProgram) {
-      setDoc(doc(db, 'programs', progToRaise), {
-        ...matchingProgram,
-        raisedBudget: matchingProgram.raisedBudget + amount
-      }).catch(console.error);
-    }
+    setPrograms(prev => prev.map(p => p.id === progToRaise ? { ...p, raisedBudget: p.raisedBudget + amount } : p));
 
     return newFund;
   };
 
-  const submitComplaint = async (
+  const submitComplaint = (
     reporterName: string,
     phone: string,
     title: string,
@@ -650,43 +536,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       isAnonymous
     };
 
-    await setDoc(doc(db, 'complaints', id), newComplaint);
+    setComplaints(prev => [newComplaint, ...prev]);
   };
 
-  const respondToComplaint = async (id: string, response: string) => {
-    const original = complaints.find(c => c.id === id);
-    if (!original) return;
-    const updated = {
-      ...original,
-      status: 'Resolved' as const,
+  const respondToComplaint = (id: string, response: string) => {
+    setComplaints(prev => prev.map(c => c.id === id ? {
+      ...c,
+      status: 'Resolved',
       response,
       responseDate: new Date().toISOString().substring(0, 10)
-    };
-    await setDoc(doc(db, 'complaints', id), updated);
+    } : c));
   };
 
-  const resetToDefault = async () => {
-    if (confirm('Apakah Anda yakin ingin memulihkan data bawaan awal LAZ? Semua simulasi data Anda saat ini di database cloud akan dihapus.')) {
-      // Clear Firestore collections
-      for (const item of incomingFunds) {
-        await deleteDoc(doc(db, 'incoming_funds', item.id)).catch(console.error);
-      }
-      for (const item of outgoingFunds) {
-        await deleteDoc(doc(db, 'outgoing_funds', item.id)).catch(console.error);
-      }
-      for (const item of beneficiaries) {
-        await deleteDoc(doc(db, 'beneficiaries', item.id)).catch(console.error);
-      }
-      for (const item of complaints) {
-        await deleteDoc(doc(db, 'complaints', item.id)).catch(console.error);
-      }
-      for (const item of auditLogs) {
-        await deleteDoc(doc(db, 'audit_logs', item.id)).catch(console.error);
-      }
-      // Overwrite programs with initial
-      for (const p of DEFAULT_PROGRAMS) {
-        await setDoc(doc(db, 'programs', p.id), p).catch(console.error);
-      }
+  const resetToDefault = () => {
+    if (confirm('Apakah Anda yakin ingin memulihkan data bawaan awal LAZ? Semua simulasi data Anda saat ini akan dihapus.')) {
+      setPrograms(DEFAULT_PROGRAMS);
+      setIncomingFunds(DEFAULT_INCOMING_FUNDS);
+      setOutgoingFunds(DEFAULT_OUTGOING_FUNDS);
+      setBeneficiaries(DEFAULT_BENEFICIARIES);
+      setAuditLogs(DEFAULT_AUDIT_LOGS);
+      setComplaints(DEFAULT_COMPLAINTS);
       setCurrentRole('umum');
     }
   };

@@ -501,22 +501,6 @@ export const DashboardAdmin: React.FC<{ onExitPortal: () => void }> = ({ onExitP
         </div>
       </section>
 
-      {/* Sync Diagnosis Warning Banner */}
-      {syncStatus === 'error' && (
-        <div className="bg-red-600 text-white font-semibold text-xs px-4 py-2.5 shadow flex flex-col md:flex-row items-center justify-between gap-3 animate-pulse">
-          <div className="flex items-center gap-2">
-            <span className="font-bold uppercase tracking-wider bg-black/30 px-2 py-0.5 rounded text-[10px]">Peringatan Sinkronisasi Cloud:</span>
-            <span>{syncErrorMessage || 'Koneksi terputus dari database cloud.'}</span>
-          </div>
-          <button 
-            onClick={() => alert(`SINKRONISASI CLOUD GAGAL\n\nKendala: ${syncErrorMessage || 'Aturan keamanan memblokir.'}\n\nSOLUSI CARA MEMPERBAIKI:\n1. Buka Firebase Console proyek Anda ("laz-mdt-aljihad")\n2. Klik "Firestore Database" di menu kiri\n3. Buka tab "Rules" (Aturan Keamanan)\n4. Ubah isi aturan keamanan menjadi:\n\n   rules_version = '2';\n   service cloud.firestore {\n     match /databases/{database}/documents {\n       match /{document=**} {\n         allow read, write: if true;\n       }\n     }\n   }\n\n5. Klik "Publish"\n6. Muat ulang / Refresh halaman aplikasi ini.`)}
-            className="bg-black/25 hover:bg-black/40 text-white font-bold px-3 py-1 rounded text-[11px] transition whitespace-nowrap cursor-pointer"
-          >
-            Lihat Cara Memperbaiki 💡
-          </button>
-        </div>
-      )}
-
       {/* ADMIN TITLE BAR */}
       <header className="bg-gradient-to-r from-[#114232] to-[#0a2e22] border-b border-gray-200 py-6 px-4 md:px-8 text-white relative">
         <div className="absolute top-0 right-0 h-full w-48 bg-[#FCDC2A]/5 rounded-full filter blur-xl pointer-events-none"></div>
@@ -528,22 +512,6 @@ export const DashboardAdmin: React.FC<{ onExitPortal: () => void }> = ({ onExitP
             <div>
               <h1 className="text-xl font-extrabold tracking-tight text-white flex items-center gap-2">
                 Portal Pengurus Amil Al Jihad
-                {syncStatus === 'success' ? (
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                    Sync Aktif
-                  </span>
-                ) : syncStatus === 'error' ? (
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium bg-red-500/20 text-red-300 border border-red-500/30">
-                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
-                    Offline
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
-                    Connecting
-                  </span>
-                )}
                 <span className="text-[10px] font-mono px-2 py-0.5 bg-black/25 border border-white/10 text-[#FCDC2A] rounded">
                   RT02 RW08 Bagendit
                 </span>
