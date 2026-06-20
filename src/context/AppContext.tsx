@@ -31,6 +31,10 @@ interface AppContextType {
   auditLogs: AuditLog[];
   complaints: Complaint[];
   
+  // Cloud Sync State
+  syncStatus: 'connecting' | 'success' | 'error';
+  syncErrorMessage: string | null;
+  
   // Finance Actions (Treasurer)
   addIncomingFund: (fund: Omit<IncomingFund, 'id' | 'receiptNumber'>) => void;
   updateIncomingFund: (id: string, fund: Partial<IncomingFund>, reason: string) => void;
@@ -122,6 +126,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return (saved as UserRole) || 'umum';
   });
 
+  // Cloud Sync status
+  const [syncStatus, setSyncStatus] = useState<'connecting' | 'success' | 'error'>('connecting');
+  const [syncErrorMessage, setSyncErrorMessage] = useState<string | null>(null);
+
   const [incomingFunds, setIncomingFunds] = useState<IncomingFund[]>(() => {
     const saved = localStorage.getItem('laz_incoming_funds_v2');
     return saved ? JSON.parse(saved) : DEFAULT_INCOMING_FUNDS;
@@ -168,7 +176,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // --- Real-time synchronization is established with Firebase Firestore ---
   useEffect(() => {
-    const isLocalEmpty = (arr: any[]) => !arr || arr.length === 0;
+    const checkSuccess = () => {
+      setSyncStatus('success');
+      setSyncErrorMessage(null);
+    };
+
+    const handleError = (error: any) => {
+      console.error('Firestore listen error:', error);
+      setSyncStatus('error');
+      let msg = error?.message || String(error);
+      if (msg.includes('permission') || msg.includes('Permission')) {
+        msg = 'Aturan Keamanan (Security Rules) memblokir koneksi. Pastikan tab "Rules" proyek Firebase Anda ("laz-mdt-aljihad") disetel ke: allow read, write: if true;';
+      } else if (msg.includes('unavailable') || msg.includes('Failed to get document')) {
+        msg = 'Koneksi ke Firestore cloud gagal atau offline. Pastikan Firestore Database telah dibuat di proyek Firebase "laz-mdt-aljihad".';
+      }
+      setSyncErrorMessage(msg);
+    };
 
     const unsubscribes = [
       onSnapshot(collection(db, 'incoming_funds'), (snapshot) => {
@@ -180,8 +203,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         list.sort((a, b) => b.id.localeCompare(a.id));
         setIncomingFunds(list);
         localStorage.setItem('laz_incoming_funds_v2', JSON.stringify(list));
+        checkSuccess();
       }, (error) => {
-        console.error('Firestore incoming_funds listen error:', error);
+        handleError(error);
       }),
 
       onSnapshot(collection(db, 'outgoing_funds'), (snapshot) => {
@@ -192,8 +216,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         list.sort((a, b) => b.id.localeCompare(a.id));
         setOutgoingFunds(list);
         localStorage.setItem('laz_outgoing_funds_v2', JSON.stringify(list));
+        checkSuccess();
       }, (error) => {
-        console.error('Firestore outgoing_funds listen error:', error);
+        handleError(error);
       }),
 
       onSnapshot(collection(db, 'beneficiaries'), (snapshot) => {
@@ -204,8 +229,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         list.sort((a, b) => b.id.localeCompare(a.id));
         setBeneficiaries(list);
         localStorage.setItem('laz_beneficiaries_v2', JSON.stringify(list));
+        checkSuccess();
       }, (error) => {
-        console.error('Firestore beneficiaries listen error:', error);
+        handleError(error);
       }),
 
       onSnapshot(collection(db, 'programs'), (snapshot) => {
@@ -224,8 +250,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setPrograms(list);
           localStorage.setItem('laz_programs_v2', JSON.stringify(list));
         }
+        checkSuccess();
       }, (error) => {
-        console.error('Firestore programs listen error:', error);
+        handleError(error);
       }),
 
       onSnapshot(collection(db, 'audit_logs'), (snapshot) => {
@@ -236,8 +263,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         list.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
         setAuditLogs(list);
         localStorage.setItem('laz_audit_logs_v2', JSON.stringify(list));
+        checkSuccess();
       }, (error) => {
-        console.error('Firestore audit_logs listen error:', error);
+        handleError(error);
       }),
 
       onSnapshot(collection(db, 'complaints'), (snapshot) => {
@@ -248,8 +276,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         list.sort((a, b) => b.id.localeCompare(a.id));
         setComplaints(list);
         localStorage.setItem('laz_complaints_v2', JSON.stringify(list));
+        checkSuccess();
       }, (error) => {
-        console.error('Firestore complaints listen error:', error);
+        handleError(error);
       }),
     ];
 
@@ -673,6 +702,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       programs,
       auditLogs,
       complaints,
+      syncStatus,
+      syncErrorMessage,
       addIncomingFund,
       updateIncomingFund,
       deleteIncomingFund,
