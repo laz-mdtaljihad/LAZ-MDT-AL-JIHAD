@@ -17,7 +17,8 @@ import {
   UserProfile,
   FundType,
   BeneficiaryCategory,
-  ApprovalStatus
+  ApprovalStatus,
+  ProjectProgress
 } from '../types';
 
 interface AppContextType {
@@ -30,6 +31,7 @@ interface AppContextType {
   programs: Program[];
   auditLogs: AuditLog[];
   complaints: Complaint[];
+  documentations: ProjectProgress[];
   
   // Cloud Sync State
   syncStatus: 'connecting' | 'success' | 'error';
@@ -52,6 +54,11 @@ interface AppContextType {
   // Program Actions
   addProgram: (program: Omit<Program, 'id' | 'raisedBudget' | 'allocatedBudget'>) => void;
   updateProgram: (id: string, program: Partial<Program>) => void;
+  
+  // Documentation / Progress Actions
+  addDocumentation: (doc: Omit<ProjectProgress, 'id'>) => void;
+  updateDocumentation: (id: string, doc: Partial<ProjectProgress>) => void;
+  deleteDocumentation: (id: string) => void;
   
   // Approval Actions (Chairman / Ketua)
   approveTransaction: (id: string) => void;
@@ -117,6 +124,39 @@ const DEFAULT_BENEFICIARIES: Beneficiary[] = [];
 const DEFAULT_AUDIT_LOGS: AuditLog[] = [];
 const DEFAULT_COMPLAINTS: Complaint[] = [];
 
+const DEFAULT_DOCUMENTATIONS: ProjectProgress[] = [
+  {
+    id: 'DOC01',
+    date: '2026-06-15',
+    title: 'Pembongkaran Struktur Atap Lama',
+    description: 'Pelepasan genteng dan kayu usuk/reng lama yang lapuk untuk diganti dengan konstruksi baja kokoh.',
+    mediaType: 'image',
+    mediaUrl: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?auto=format&fit=crop&q=80&w=800',
+    progressPercentage: 15,
+    uploadedBy: 'Hamdan Al-Bantari'
+  },
+  {
+    id: 'DOC02',
+    date: '2026-06-22',
+    title: 'Pengecoran Pondasi Pilar Utama',
+    description: 'Pilar beton utama diperkuat untuk menopang struktur bangunan kelas di lantai dua kelak.',
+    mediaType: 'image',
+    mediaUrl: 'https://images.unsplash.com/photo-1590069261209-f8e9b8642343?auto=format&fit=crop&q=80&w=800',
+    progressPercentage: 35,
+    uploadedBy: 'Hamdan Al-Bantari'
+  },
+  {
+    id: 'DOC03',
+    date: '2026-06-28',
+    title: 'Pemasangan Dinding Bata Kelas Baru',
+    description: 'Progres pengerjaan dinding semen dan batu bata merah untuk dua ruang kelas utama santri.',
+    mediaType: 'video',
+    mediaUrl: 'https://assets.mixkit.co/videos/preview/mixkit-construction-site-with-cranes-and-workers-41716-large.mp4',
+    progressPercentage: 55,
+    uploadedBy: 'Hamdan Al-Bantari'
+  }
+];
+
 // --- APP PROVIDER COMPONENT ---
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -172,6 +212,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [complaints, setComplaints] = useState<Complaint[]>(() => {
     const saved = localStorage.getItem('laz_complaints_v2');
     return saved ? JSON.parse(saved) : DEFAULT_COMPLAINTS;
+  });
+
+  const [documentations, setDocumentations] = useState<ProjectProgress[]>(() => {
+    const saved = localStorage.getItem('laz_documentations_v2');
+    return saved ? JSON.parse(saved) : DEFAULT_DOCUMENTATIONS;
   });
 
   // --- Real-time synchronization is established with Firebase Firestore ---
@@ -276,6 +321,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         list.sort((a, b) => b.id.localeCompare(a.id));
         setComplaints(list);
         localStorage.setItem('laz_complaints_v2', JSON.stringify(list));
+        checkSuccess();
+      }, (error) => {
+        handleError(error);
+      }),
+
+      onSnapshot(collection(db, 'documentations'), (snapshot) => {
+        const list: ProjectProgress[] = [];
+        snapshot.forEach((doc) => {
+          list.push(doc.data() as ProjectProgress);
+        });
+        if (snapshot.empty) {
+          // Initialize empty collection with default documentations
+          DEFAULT_DOCUMENTATIONS.forEach((d) => {
+            setDoc(doc(db, 'documentations', d.id), d).catch(err => console.error('Error seeding documentation:', err));
+          });
+          setDocumentations(DEFAULT_DOCUMENTATIONS);
+        } else {
+          list.sort((a, b) => b.date.localeCompare(a.date));
+          setDocumentations(list);
+          localStorage.setItem('laz_documentations_v2', JSON.stringify(list));
+        }
         checkSuccess();
       }, (error) => {
         handleError(error);
@@ -689,6 +755,46 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setDoc(doc(db, 'complaints', id), updated).catch(console.error);
   };
 
+  const addDocumentation = (docData: Omit<ProjectProgress, 'id'>) => {
+    const id = `DOC${Math.floor(100 + Math.random() * 900)}`;
+    const newDoc: ProjectProgress = {
+      ...docData,
+      id
+    };
+    setDoc(doc(db, 'documentations', id), newDoc).catch(console.error);
+    writeLog(
+      'CREATE',
+      'PROGRAM',
+      id,
+      `Menambahkan dokumentasi progres "${docData.title}" (${docData.progressPercentage}%).`
+    );
+  };
+
+  const updateDocumentation = (id: string, updatedFields: Partial<ProjectProgress>) => {
+    const original = documentations.find(d => d.id === id);
+    if (!original) return;
+    const merged = { ...original, ...updatedFields };
+    setDoc(doc(db, 'documentations', id), merged).catch(console.error);
+    writeLog(
+      'UPDATE',
+      'PROGRAM',
+      id,
+      `Memperbarui dokumentasi progres "${original.title}".`
+    );
+  };
+
+  const deleteDocumentation = (id: string) => {
+    const original = documentations.find(d => d.id === id);
+    if (!original) return;
+    deleteDoc(doc(db, 'documentations', id)).catch(console.error);
+    writeLog(
+      'DELETE',
+      'PROGRAM',
+      id,
+      `Menghapus dokumentasi progres "${original.title}".`
+    );
+  };
+
   const resetToDefault = async () => {
     if (confirm('Apakah Anda yakin ingin memulihkan data bawaan awal LAZ? Semua simulasi data Anda saat ini di database cloud akan dihapus.')) {
       // Clear Firestore collections
@@ -707,9 +813,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       for (const item of auditLogs) {
         await deleteDoc(doc(db, 'audit_logs', item.id)).catch(console.error);
       }
+      for (const item of documentations) {
+        await deleteDoc(doc(db, 'documentations', item.id)).catch(console.error);
+      }
       // Overwrite programs with initial
       for (const p of DEFAULT_PROGRAMS) {
         await setDoc(doc(db, 'programs', p.id), p).catch(console.error);
+      }
+      // Reseed documentations
+      for (const d of DEFAULT_DOCUMENTATIONS) {
+        await setDoc(doc(db, 'documentations', d.id), d).catch(console.error);
       }
       setCurrentRole('umum');
     }
@@ -726,6 +839,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       programs,
       auditLogs,
       complaints,
+      documentations,
       syncStatus,
       syncErrorMessage,
       addIncomingFund,
@@ -739,6 +853,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       deleteBeneficiary,
       addProgram,
       updateProgram,
+      addDocumentation,
+      updateDocumentation,
+      deleteDocumentation,
       approveTransaction,
       rejectTransaction,
       submitQuickDonation,

@@ -95,3 +95,15 @@ export interface Message {
   content: string;
   timestamp: string;
 }
+
+export interface ProjectProgress {
+  id: string;
+  date: string;
+  title: string;
+  description: string;
+  mediaType: 'image' | 'video';
+  mediaUrl: string; // Base64 image/video data or standard URL
+  progressPercentage: number; // e.g. 10, 45, 100
+  uploadedBy: string;
+}
+

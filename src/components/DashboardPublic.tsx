@@ -22,7 +22,10 @@ import {
   Image as ImageIcon,
   MessageSquare,
   Sparkles,
-  Printer
+  Printer,
+  Video,
+  Play,
+  Calendar
 } from 'lucide-react';
 
 export const DashboardPublic: React.FC<{ onEnterPortal: () => void }> = ({ onEnterPortal }) => {
@@ -31,6 +34,7 @@ export const DashboardPublic: React.FC<{ onEnterPortal: () => void }> = ({ onEnt
     outgoingFunds, 
     programs, 
     complaints, 
+    documentations,
     submitQuickDonation, 
     submitComplaint,
     syncStatus,
@@ -114,7 +118,7 @@ export const DashboardPublic: React.FC<{ onEnterPortal: () => void }> = ({ onEnt
     const waNumber = '08211857851';
     const cleanPhone = compPhone ? ` (No. HP: ${compPhone})` : '';
     const waText = encodeURIComponent(
-      `Assalamu’alaikum, saya ingin menyampaikan laporan/pengaduan terkait LAZ MDT Al Jihad:\n\n` +
+      `Assalamu’alaikum, saya ingin menyampaikan laporan/pengaduan terkait PANITIA PEMBANGUNGAN MDT AL JIHAD:\n\n` +
       `Dari: ${reporter}${cleanPhone}\n` +
       `Sebab/Judul: ${compTitle}\n` +
       `Detail Laporan: ${compContent}\n\n` +
@@ -136,7 +140,7 @@ export const DashboardPublic: React.FC<{ onEnterPortal: () => void }> = ({ onEnt
   // Export report to CSV simulation
   const handleExportPublicReport = () => {
     let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "=== LAPORAN PUBLIKASI LAZ MDT AL JIHAD ===\r\n";
+    csvContent += "=== LAPORAN PUBLIKASI PANITIA PEMBANGUNGAN MDT AL JIHAD ===\r\n";
     csvContent += `Tanggal Cetak: ${new Date().toISOString().substring(0, 10)}\r\n`;
     csvContent += `Total Kas Masuk: Rp ${totalIncome}\r\n`;
     csvContent += `Total Kas Penyaluran (Realisasi): Rp ${totalRealized}\r\n`;
@@ -187,7 +191,7 @@ export const DashboardPublic: React.FC<{ onEnterPortal: () => void }> = ({ onEnt
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-bold text-lg text-white block tracking-wide leading-none">LAZ MDT AL JIHAD</span>
+                <span className="font-bold text-lg text-white block tracking-wide leading-none">PANITIA PEMBANGUNGAN MDT AL JIHAD</span>
                 {syncStatus === 'success' ? (
                   <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
@@ -270,7 +274,7 @@ export const DashboardPublic: React.FC<{ onEnterPortal: () => void }> = ({ onEnt
                 Mempercepat Kebaikan Berkelanjutan
               </h2>
               <p className="text-gray-700 text-sm md:text-base leading-relaxed">
-                <strong>LAZ MDT Al Jihad</strong> adalah unit pelaksana teknis yang bergerak di bidang pengelolaan dana sosial keagamaan, berada di bawah pembinaan dan tanggung jawab penuh <strong>Yayasan Al Hamid Hadum</strong>. Berdiri sejak tahun 2026, lembaga ini hadir sebagai perantara yang menghubungkan keinginan beramal dari masyarakat dengan kebutuhan santri dhuafa dan perbaikan prasarana pendidikan agama di lingkungan MDT Al Jihad.
+                <strong>PANITIA PEMBANGUNGAN MDT AL JIHAD</strong> adalah unit kerja kepanitiaan resmi yang dibentuk untuk mengawal, menghimpun, mengelola, serta mendistribusikan dana pembangunan, perluasan, dan rehabilitasi sarana-prasarana fisik di bawah naungan <strong>Yayasan Al Hamid Hadum</strong>. Lembaga panitia ini dibentuk guna memastikan transparansi mutlak dari setiap rupiah donasi yang diamanahkan masyarakat demi terwujudnya tempat belajar mengajar yang layak dan nyaman bagi santri.
               </p>
             </div>
 
@@ -339,7 +343,7 @@ export const DashboardPublic: React.FC<{ onEnterPortal: () => void }> = ({ onEnt
 
             <div className="bg-black/20 rounded-2xl p-4 border border-white/10 text-[11px] leading-relaxed text-[#FCDC2A] text-center">
               "Kekayaan sejati bukanlah melimpahnya harta materi, melainkan hati yang terus mengalirkan kebermanfaatan."<br/>
-              <strong className="block mt-1">— Slogan Amanah LAZ Al Jihad</strong>
+              <strong className="block mt-1">— Slogan Amanah Panitia Pembangunan</strong>
             </div>
           </div>
         </section>
@@ -434,7 +438,7 @@ export const DashboardPublic: React.FC<{ onEnterPortal: () => void }> = ({ onEnt
               </div>
               <div className="pt-2 border-t border-gray-200/60 flex items-center justify-between text-[9px] text-gray-400 font-mono">
                 <span>Diperbarui: Real-Time</span>
-                <span className="text-[#114232] font-bold">LAZ AL JIHAD</span>
+                <span className="text-[#114232] font-bold">PANITIA AL JIHAD</span>
               </div>
             </div>
 
@@ -525,7 +529,7 @@ export const DashboardPublic: React.FC<{ onEnterPortal: () => void }> = ({ onEnt
             <span className="text-[10px] font-mono tracking-widest text-[#87A922] uppercase font-bold">Kemaslahatan Sosial</span>
             <h2 className="text-2xl font-extrabold text-[#114232]">Program Pembinaan Aktif</h2>
             <p className="text-xs text-gray-500">
-              Berikut adalah peta kerja dan realisasi pencapaian anggaran program kerja LAZ MDT Al Jihad tahun ini.
+              Berikut adalah peta kerja dan realisasi pencapaian anggaran program kerja pembangunan dan operasional panitia tahun ini.
             </p>
           </div>
 
@@ -939,70 +943,87 @@ export const DashboardPublic: React.FC<{ onEnterPortal: () => void }> = ({ onEnt
           </div>
         </section>
 
-        {/* --- SECTION 6: GALERI KEGIATAN & DOCUMENTATION --- */}
+        {/* --- SECTION 6: DOKUMENTASI & PROGRES PEMBANGUNAN MDT --- */}
         <section className="space-y-6">
           <div className="space-y-1">
-            <span className="text-[10px] font-mono tracking-widest text-[#87A922] uppercase font-bold">Bukti Kegiatan Nyata</span>
+            <span className="text-[10px] font-mono tracking-widest text-[#87A922] uppercase font-bold">Bukti Fisik & Progres Nyata</span>
             <h2 className="text-2xl font-black text-[#114232] flex items-center gap-2">
               <ImageIcon size={20} className="text-[#87A922]" />
-              Galeri Dokumentasi Amanah
+              Dokumentasi Pembangunan & Rehab
             </h2>
             <p className="text-xs text-gray-500">
-              Dokumentasi nyata penyaluran bantuan langsung dari lingkungan Desa Bagendit Banyuresmi Garut.
+              Laporan berkala progres pembangunan dan rehabilitasi fisik gedung MDT Al Jihad yang sedang berjalan.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white rounded-3xl overflow-hidden border border-gray-200 group shadow-soft">
-              <div className="h-48 overflow-hidden relative">
-                <img 
-                  src="https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&q=80&w=400" 
-                  alt="serah terima bantuan"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
+            {documentations.length === 0 ? (
+              <div className="col-span-full bg-white rounded-3xl p-12 text-center border border-gray-200">
+                <p className="text-sm text-gray-400">Belum ada dokumentasi progres pembangunan yang diunggah.</p>
               </div>
-              <div className="p-4 space-y-1">
-                <span className="text-[10px] text-[#87A922] font-mono font-bold">11 Juni 2026</span>
-                <h4 className="font-extrabold text-xs text-[#114232]">Insentif Bulanan & Transport Guru Al Jihad</h4>
-                <p className="text-[10px] text-gray-500 leading-relaxed">
-                  Penyaluran berkala gaji dukungan untuk 5 asatidzah madrasah diniyyah takmiliyyah.
-                </p>
-              </div>
-            </div>
+            ) : (
+              documentations.map((doc) => (
+                <div key={doc.id} className="bg-white rounded-3xl overflow-hidden border border-gray-200 group shadow-soft flex flex-col justify-between hover:shadow-md transition duration-300">
+                  <div className="h-52 overflow-hidden bg-neutral-950 relative flex items-center justify-center">
+                    {doc.mediaType === 'video' ? (
+                      <video 
+                        src={doc.mediaUrl} 
+                        controls 
+                        className="w-full h-full object-cover" 
+                        preload="metadata"
+                        playsInline
+                      />
+                    ) : (
+                      <img 
+                        src={doc.mediaUrl} 
+                        alt={doc.title}
+                        referrerPolicy="no-referrer"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    )}
+                    {doc.mediaType === 'video' && (
+                      <span className="absolute top-3 right-3 px-2 py-1 bg-black/60 backdrop-blur-md rounded-md text-[9px] font-mono font-bold text-amber-400 flex items-center gap-1">
+                        <Video size={10} /> VIDEO
+                      </span>
+                    )}
+                    {doc.mediaType === 'image' && (
+                      <span className="absolute top-3 right-3 px-2 py-1 bg-[#114232]/80 backdrop-blur-md rounded-md text-[9px] font-mono font-bold text-[#FCDC2A] flex items-center gap-1">
+                        <ImageIcon size={10} /> GAMBAR
+                      </span>
+                    )}
+                  </div>
+                  
+                  <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-[10px] text-gray-400 font-mono">
+                        <span className="flex items-center gap-1">
+                          <Calendar size={12} className="text-[#87A922]" /> {doc.date}
+                        </span>
+                        <span className="bg-[#114232]/10 text-[#114232] px-2 py-0.5 rounded-full font-bold">
+                          Oleh: {doc.uploadedBy}
+                        </span>
+                      </div>
+                      
+                      <h4 className="font-extrabold text-sm text-[#114232] line-clamp-1">{doc.title}</h4>
+                      <p className="text-xs text-gray-600 leading-relaxed line-clamp-3">{doc.description}</p>
+                    </div>
 
-            <div className="bg-white rounded-3xl overflow-hidden border border-gray-200 group shadow-soft">
-              <div className="h-48 overflow-hidden relative">
-                <img 
-                  src="https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&q=80&w=400" 
-                  alt="serah terima meja"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-              </div>
-              <div className="p-4 space-y-1">
-                <span className="text-[10px] text-[#87A922] font-mono font-bold">13 Juni 2026</span>
-                <h4 className="font-extrabold text-xs text-[#114232]">Pemasangan 15 Rihal Meja Belajar Jati Baru</h4>
-                <p className="text-[10px] text-gray-500 leading-relaxed">
-                  Santri dapat belajar Al-Quran dengan tatanan ergonomis dan nyaman, dibiayai dana Wakaf.
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-3xl overflow-hidden border border-gray-200 group shadow-soft">
-              <div className="h-48 overflow-hidden relative">
-                <img 
-                  src="https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&q=80&w=400" 
-                  alt="santunan yatim"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-              </div>
-              <div className="p-4 space-y-1">
-                <span className="text-[10px] text-[#87A922] font-mono font-bold">16 Juni 2026</span>
-                <h4 className="font-extrabold text-xs text-[#114232]">Santunan Pendidikan Santri Yatim Bagendit</h4>
-                <p className="text-[10px] text-gray-500 leading-relaxed">
-                  Bantuan perlengkapan jinjing sekolah dan uang tunai jajan santri yatim dhuafa.
-                </p>
-              </div>
-            </div>
+                    <div className="space-y-1.5 pt-2 border-t border-gray-100">
+                      <div className="flex justify-between items-center text-[10px] font-mono">
+                        <span className="text-gray-500">Pekerjaan Fisik:</span>
+                        <span className="font-bold text-[#114232]">{doc.progressPercentage}% Selesai</span>
+                      </div>
+                      <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                        <div 
+                          className="bg-gradient-to-r from-[#114232] to-[#87A922] h-full transition-all duration-500"
+                          style={{ width: `${doc.progressPercentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </section>
       </main>
@@ -1011,13 +1032,13 @@ export const DashboardPublic: React.FC<{ onEnterPortal: () => void }> = ({ onEnt
       <footer className="mt-20 border-t border-emerald-950 bg-[#040C08] py-8 text-xs text-neutral-500">
         <div className="max-w-7xl mx-auto px-4 md:px-8 flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
           <div className="space-y-1">
-            <span className="font-bold text-neutral-300 block">© 2026 LAZ MDT AL JIHAD</span>
+            <span className="font-bold text-neutral-300 block">© 2026 PANITIA PEMBANGUNGAN MDT AL JIHAD</span>
             <span className="text-[10px] block text-neutral-500">
               Kp. Bantarjati Desa Bagendit, Kecamatan Banyuresmi, Kabupaten Garut. Naungan Yayasan Al Hamid Hadum.
             </span>
           </div>
           <div className="flex gap-4">
-            <span className="text-emerald-800/80">Sistem Digital Transparansi 2.5 — Garut</span>
+            <span className="text-emerald-800/80">Sistem Digital Transparansi Pembangunan 2.5 — Garut</span>
           </div>
         </div>
       </footer>
@@ -1031,7 +1052,7 @@ export const DashboardPublic: React.FC<{ onEnterPortal: () => void }> = ({ onEnt
             
             <div className="text-center space-y-2">
               <span className="text-lg block tracking-widest font-bold text-[#E6C280]">KUITANSI RESMI</span>
-              <span className="text-xs block text-neutral-400 -mt-1 block uppercase">LAZ MDT AL JIHAD GARUT</span>
+              <span className="text-xs block text-neutral-400 -mt-1 block uppercase">PANITIA PEMBANGUNGAN MDT AL JIHAD GARUT</span>
               <div className="w-24 h-0.5 bg-gradient-to-r from-transparent via-amber-400 to-transparent mx-auto"></div>
             </div>
 
@@ -1071,7 +1092,7 @@ export const DashboardPublic: React.FC<{ onEnterPortal: () => void }> = ({ onEnt
             <div className="flex justify-between items-center bg-[#05140f] p-4 rounded-xl border border-emerald-900/20 text-[10px] text-neutral-400 leading-relaxed leading-relaxed">
               <div>
                 <span className="font-bold text-neutral-300 block mb-1">✓ Status: SUKSES (TERCATAT)</span>
-                Amanah donasi yang Sahabat percayakan telah secara langsung masuk ke dalam buku kas digital LAZ Al Jihad Garut. Jazakumullah Khairan Katsiran!
+                Amanah donasi yang Sahabat percayakan telah secara langsung masuk ke dalam buku kas digital Panitia Pembangunan MDT Al Jihad Garut. Jazakumullah Khairan Katsiran!
               </div>
             </div>
 

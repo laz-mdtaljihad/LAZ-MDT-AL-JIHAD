@@ -12,7 +12,8 @@ import {
   FundType, 
   BeneficiaryCategory, 
   UserRole,
-  Program
+  Program,
+  ProjectProgress
 } from '../types';
 import { 
   Users, 
@@ -38,7 +39,10 @@ import {
   Eye,
   FileCheck2,
   MapPin,
-  Lock
+  Lock,
+  Image as ImageIcon,
+  Video,
+  Play
 } from 'lucide-react';
 
 export const DashboardAdmin: React.FC<{ onExitPortal: () => void }> = ({ onExitPortal }) => {
@@ -68,11 +72,25 @@ export const DashboardAdmin: React.FC<{ onExitPortal: () => void }> = ({ onExitP
     respondToComplaint,
     resetToDefault,
     syncStatus,
-    syncErrorMessage
+    syncErrorMessage,
+    documentations,
+    addDocumentation,
+    updateDocumentation,
+    deleteDocumentation
   } = useApp();
 
   // Active admin tab inside view
-  const [adminTab, setAdminTab] = useState<'himpun' | 'salur' | 'mustahik' | 'program' | 'aduan' | 'audit'>('himpun');
+  const [adminTab, setAdminTab] = useState<'himpun' | 'salur' | 'mustahik' | 'program' | 'dokumentasi' | 'aduan' | 'audit'>('himpun');
+
+  // Documentation progress form states
+  const [isDocModalOpen, setIsDocModalOpen] = useState(false);
+  const [editingDoc, setEditingDoc] = useState<ProjectProgress | null>(null);
+  const [docTitle, setDocTitle] = useState('');
+  const [docDescription, setDocDescription] = useState('');
+  const [docProgress, setDocProgress] = useState<number>(50);
+  const [docDate, setDocDate] = useState(new Date().toISOString().substring(0, 10));
+  const [docMediaType, setDocMediaType] = useState<'image' | 'video'>('image');
+  const [docMediaUrl, setDocMediaUrl] = useState('');
 
   // Search/Filters states
   const [searchTerm, setSearchTerm] = useState('');
@@ -375,6 +393,60 @@ export const DashboardAdmin: React.FC<{ onExitPortal: () => void }> = ({ onExitP
     clearFormFields();
   };
 
+  // Documentation submit handler
+  const handleDocSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!docTitle.trim() || !docDescription.trim() || !docMediaUrl.trim()) {
+      alert('Tolong lengkapi judul, deskripsi, dan lampirkan foto atau video progres.');
+      return;
+    }
+
+    if (editingDoc) {
+      updateDocumentation(editingDoc.id, {
+        title: docTitle,
+        description: docDescription,
+        progressPercentage: docProgress,
+        date: docDate,
+        mediaType: docMediaType,
+        mediaUrl: docMediaUrl
+      });
+    } else {
+      addDocumentation({
+        title: docTitle,
+        description: docDescription,
+        progressPercentage: docProgress,
+        date: docDate,
+        mediaType: docMediaType,
+        mediaUrl: docMediaUrl,
+        uploadedBy: currentUser.name
+      });
+    }
+
+    setIsDocModalOpen(false);
+    clearFormFields();
+  };
+
+  const handleMediaFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Detect format and auto select MediaType
+    if (file.type.startsWith('video/')) {
+      setDocMediaType('video');
+    } else if (file.type.startsWith('image/')) {
+      setDocMediaType('image');
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result;
+      if (typeof result === 'string') {
+        setDocMediaUrl(result);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   // Complaint response replying submit
   const handleComplaintReplySubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -408,6 +480,13 @@ export const DashboardAdmin: React.FC<{ onExitPortal: () => void }> = ({ onExitP
     setBenCat('Fakir');
     setBenPhone('');
     setBenAssistance('');
+    setEditingDoc(null);
+    setDocTitle('');
+    setDocDescription('');
+    setDocProgress(50);
+    setDocDate(new Date().toISOString().substring(0, 10));
+    setDocMediaType('image');
+    setDocMediaUrl('');
   };
 
   // --- FILTERS & SEARCH CALCULATIONS ---
@@ -674,6 +753,21 @@ export const DashboardAdmin: React.FC<{ onExitPortal: () => void }> = ({ onExitP
                 <span>Program Kerja</span>
               </div>
               <span className="text-[10px] font-mono px-1.5 py-0.5 bg-black/40 rounded text-neutral-300">{programs.length}</span>
+            </button>
+
+            <button
+              onClick={() => { setAdminTab('dokumentasi'); setSearchTerm(''); }}
+              className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between transition cursor-pointer select-none ${
+                adminTab === 'dokumentasi'
+                  ? 'bg-emerald-800 text-white'
+                  : 'text-neutral-400 hover:text-white hover:bg-neutral-900'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <ImageIcon size={14} />
+                <span>Dokumentasi Progres</span>
+              </div>
+              <span className="text-[10px] font-mono px-1.5 py-0.5 bg-black/40 rounded text-[#FCDC2A]">{documentations.length}</span>
             </button>
 
             <button
@@ -1163,6 +1257,133 @@ export const DashboardAdmin: React.FC<{ onExitPortal: () => void }> = ({ onExitP
                       </div>
                     );
                   })}
+                </div>
+              </div>
+            )}
+
+            {/* --- WORKSPACE 5: DOKUMENTASI PROGRESS PEMBANGUNAN --- */}
+            {adminTab === 'dokumentasi' && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <h3 className="font-bold text-base text-neutral-100">Dokumentasi Progres Rehabilitasi & Pembangunan</h3>
+                    <p className="text-[11px] text-neutral-400">Media promosi transparansi fisik pembangunan MDT Al Jihad. Mendukung format gambar JPG/PNG dan video MP4.</p>
+                  </div>
+                  {canWriteSecretariat && (
+                    <button
+                      onClick={() => { clearFormFields(); setIsDocModalOpen(true); }}
+                      className="px-4 py-2 bg-emerald-800 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Plus size={14} />
+                      Tambah Dokumentasi
+                    </button>
+                  )}
+                </div>
+
+                <div className="overflow-x-auto rounded-xl border border-emerald-950">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead className="bg-[#05110c] text-neutral-400 font-mono text-[10px]">
+                      <tr>
+                        <th className="p-3 border-b border-emerald-950">Tanggal / ID</th>
+                        <th className="p-3 border-b border-emerald-950 w-32">Preview Media</th>
+                        <th className="p-3 border-b border-emerald-950">Judul & Keterangan Pekerjaan</th>
+                        <th className="p-3 border-b border-emerald-950">Progres Konstruksi</th>
+                        <th className="p-3 border-b border-emerald-950">Amil Pengunggah</th>
+                        <th className="p-3 border-b border-emerald-950 text-center">Aksi Pengelola</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-emerald-950/40">
+                      {documentations.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="p-6 text-center text-neutral-500">Belum ada dokumentasi progres terunggah. Silakan tambahkan dokumentasi baru.</td>
+                        </tr>
+                      ) : (
+                        documentations.map((doc) => (
+                          <tr key={doc.id} className="hover:bg-neutral-800/30 transition-colors">
+                            <td className="p-3 font-mono">
+                              <span className="font-bold text-white block">{doc.id}</span>
+                              <span className="text-[10px] text-neutral-400 block">{doc.date}</span>
+                            </td>
+                            <td className="p-3">
+                              <div className="w-24 h-16 rounded-lg bg-neutral-900 border border-emerald-950 overflow-hidden flex items-center justify-center relative">
+                                {doc.mediaType === 'video' ? (
+                                  <video 
+                                    src={doc.mediaUrl} 
+                                    className="w-full h-full object-cover" 
+                                    preload="metadata"
+                                    muted
+                                  />
+                                ) : (
+                                  <img 
+                                    src={doc.mediaUrl} 
+                                    alt={doc.title} 
+                                    referrerPolicy="no-referrer"
+                                    className="w-full h-full object-cover"
+                                  />
+                                )}
+                                <span className="absolute bottom-1 right-1 px-1 rounded bg-black/70 text-[8px] font-bold text-amber-300 font-mono">
+                                  {doc.mediaType.toUpperCase()}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="p-3 max-w-xs md:max-w-md">
+                              <strong className="text-neutral-200 block text-xs">{doc.title}</strong>
+                              <p className="text-[10px] text-neutral-400 leading-relaxed mt-0.5 line-clamp-2">{doc.description}</p>
+                            </td>
+                            <td className="p-3">
+                              <div className="space-y-1 w-28">
+                                <span className="text-[10px] font-bold text-neutral-300 block">{doc.progressPercentage}% Selesai</span>
+                                <div className="w-full bg-neutral-900 border border-emerald-950/60 h-1.5 rounded-full overflow-hidden">
+                                  <div 
+                                    className="bg-gradient-to-r from-emerald-600 to-amber-500 h-full" 
+                                    style={{ width: `${doc.progressPercentage}%` }}
+                                  />
+                                </div>
+                              </div>
+                            </td>
+                            <td className="p-3 text-neutral-400 font-medium">
+                              {doc.uploadedBy}
+                            </td>
+                            <td className="p-3 text-center">
+                              {canWriteSecretariat ? (
+                                <div className="flex items-center justify-center gap-2">
+                                  <button
+                                    onClick={() => {
+                                      setEditingDoc(doc);
+                                      setDocTitle(doc.title);
+                                      setDocDescription(doc.description);
+                                      setDocProgress(doc.progressPercentage);
+                                      setDocDate(doc.date);
+                                      setDocMediaType(doc.mediaType);
+                                      setDocMediaUrl(doc.mediaUrl);
+                                      setIsDocModalOpen(true);
+                                    }}
+                                    className="p-1.5 text-blue-400 hover:text-blue-300 hover:bg-neutral-800 rounded transition cursor-pointer"
+                                    title="Edit dokumentasi"
+                                  >
+                                    <Edit size={14} />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      if (confirm(`Hapus dokumentasi "${doc.title}"?`)) {
+                                        deleteDocumentation(doc.id);
+                                      }
+                                    }}
+                                    className="p-1.5 text-red-400 hover:text-red-300 hover:bg-neutral-800 rounded transition cursor-pointer"
+                                    title="Hapus dokumentasi"
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                </div>
+                              ) : (
+                                <span className="text-[10px] text-neutral-500 italic">Hanya Baca</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             )}
@@ -1803,6 +2024,165 @@ export const DashboardAdmin: React.FC<{ onExitPortal: () => void }> = ({ onExitP
                 className="flex-1 py-2.5 bg-emerald-800 hover:bg-emerald-700 text-white font-bold rounded-xl transition cursor-pointer"
               >
                 Buka Kunci
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* --- MODAL 6: DOKUMENTASI PROGRESS PEMBANGUNAN --- */}
+      {isDocModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm overflow-y-auto">
+          <form 
+            onSubmit={handleDocSubmit}
+            className="bg-[#0b1c14] border-2 border-emerald-800 w-full max-w-xl rounded-2xl p-6 md:p-8 space-y-4 relative font-sans text-xs my-8"
+          >
+            <div className="flex justify-between items-center border-b border-emerald-900/30 pb-3">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <ImageIcon size={16} className="text-[#E6C280]" />
+                {editingDoc ? 'Edit Dokumentasi Progres' : 'Tambah Dokumentasi Progres Rehabilitasi'}
+              </h3>
+              <button 
+                type="button" 
+                onClick={() => { setIsDocModalOpen(false); clearFormFields(); }} 
+                className="text-neutral-400 hover:text-white"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <label className="text-neutral-300 font-bold">Judul Pekerjaan / Milestone</label>
+                <input
+                  type="text"
+                  required
+                  value={docTitle}
+                  onChange={(e) => setDocTitle(e.target.value)}
+                  placeholder="Contoh: Pemasangan Kusen Jendela Lantai 2"
+                  className="w-full bg-[#040d09] border border-emerald-950 p-2.5 rounded-xl text-neutral-200 focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-neutral-300 font-bold">Keterangan / Progress Pekerjaan Detail</label>
+                <textarea
+                  required
+                  value={docDescription}
+                  onChange={(e) => setDocDescription(e.target.value)}
+                  rows={3}
+                  placeholder="Deskripsikan pekerjaan fisik yang sedang berlangsung..."
+                  className="w-full bg-[#040d09] border border-emerald-950 p-2.5 rounded-xl text-neutral-200 focus:outline-none focus:border-emerald-500 resize-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-neutral-300 font-bold">Tanggal Kegiatan</label>
+                  <input
+                    type="date"
+                    required
+                    value={docDate}
+                    onChange={(e) => setDocDate(e.target.value)}
+                    className="w-full bg-[#040d09] border border-emerald-950 p-2.5 rounded-xl text-neutral-200 focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-neutral-300 font-bold">Tipe Media Utama</label>
+                  <div className="flex gap-4 p-2 bg-[#040d09] rounded-xl border border-emerald-950">
+                    <label className="flex items-center gap-1.5 cursor-pointer text-neutral-300 font-mono">
+                      <input 
+                        type="radio" 
+                        name="mediaType" 
+                        value="image" 
+                        checked={docMediaType === 'image'}
+                        onChange={() => setDocMediaType('image')} 
+                      />
+                      Gambar
+                    </label>
+                    <label className="flex items-center gap-1.5 cursor-pointer text-neutral-300 font-mono">
+                      <input 
+                        type="radio" 
+                        name="mediaType" 
+                        value="video" 
+                        checked={docMediaType === 'video'}
+                        onChange={() => setDocMediaType('video')} 
+                      />
+                      Video
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-neutral-300 font-bold block">Persentase Kemajuan Pekerjaan Fisik ({docProgress}%)</label>
+                <div className="flex items-center gap-4">
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={docProgress}
+                    onChange={(e) => setDocProgress(Number(e.target.value))}
+                    className="flex-1 accent-emerald-600 h-2 bg-[#040d09] rounded-lg appearance-none cursor-pointer"
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={docProgress}
+                    onChange={(e) => setDocProgress(Math.min(100, Math.max(0, Number(e.target.value))))}
+                    className="w-16 text-center bg-[#040d09] border border-emerald-950 p-1 rounded-lg text-white font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2 border-t border-emerald-950/40 pt-2">
+                <label className="text-neutral-300 font-bold block">Lampiran File Dokumentasi (JPG, PNG, atau MP4)</label>
+                <div className="flex flex-col gap-2">
+                  <input
+                    type="file"
+                    accept="image/*,video/*"
+                    onChange={handleMediaFileChange}
+                    className="block w-full text-xs text-neutral-400 file:mr-4 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-900/40 file:text-emerald-300 hover:file:bg-emerald-900/60 cursor-pointer file:cursor-pointer"
+                  />
+                  <div className="text-[10px] text-neutral-500 font-mono text-center">Atau masukan URL Media secara manual:</div>
+                  <input
+                    type="text"
+                    value={docMediaUrl}
+                    onChange={(e) => setDocMediaUrl(e.target.value)}
+                    placeholder="Contoh: https://images.unsplash.com/... atau tempel Base64"
+                    className="w-full bg-[#040d09] border border-emerald-950 p-2 rounded-xl text-neutral-200 focus:outline-none focus:border-emerald-500 font-mono text-[10px]"
+                  />
+                </div>
+              </div>
+
+              {docMediaUrl && (
+                <div className="space-y-1">
+                  <span className="text-[10px] text-neutral-400 font-bold block">Preview Lampiran Terpilih:</span>
+                  <div className="w-full h-32 bg-neutral-900 rounded-xl border border-emerald-950 flex items-center justify-center overflow-hidden">
+                    {docMediaType === 'video' ? (
+                      <video src={docMediaUrl} controls className="max-w-full max-h-full" />
+                    ) : (
+                      <img src={docMediaUrl} alt="Preview" referrerPolicy="no-referrer" className="max-w-full max-h-full object-contain" />
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-2 justify-end pt-3 border-t border-emerald-900/10">
+              <button
+                type="button"
+                onClick={() => { setIsDocModalOpen(false); clearFormFields(); }}
+                className="px-4 py-2 bg-neutral-900 text-neutral-400 font-bold rounded-xl cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                className="px-6 py-2 bg-emerald-800 hover:bg-emerald-700 text-white font-bold rounded-xl cursor-pointer"
+              >
+                {editingDoc ? 'Simpan Perubahan' : 'Tambahkan Dokumentasi'}
               </button>
             </div>
           </form>
