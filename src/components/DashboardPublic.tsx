@@ -5,7 +5,7 @@
 
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { FundType, IncomingFund } from '../types';
+import { FundType, IncomingFund, LearningMedia, RaporSantri } from '../types';
 import { MovingTitle, PulseTitle } from './MovingTitle';
 import { 
   Heart, 
@@ -25,8 +25,21 @@ import {
   Printer,
   Video,
   Play,
-  Calendar
+  Calendar,
+  Users,
+  GraduationCap,
+  BookOpen,
+  Award,
+  Search,
+  Building2,
+  Eye,
+  BookMarked,
+  X,
+  FileCheck2,
+  Check
 } from 'lucide-react';
+import { TabManajemenMDT } from './public/TabManajemenMDT';
+import { TabMediaAjar } from './public/TabMediaAjar';
 
 export const DashboardPublic: React.FC<{ onEnterPortal: () => void }> = ({ onEnterPortal }) => {
   const { 
@@ -35,14 +48,30 @@ export const DashboardPublic: React.FC<{ onEnterPortal: () => void }> = ({ onEnt
     programs, 
     complaints, 
     documentations,
+    santriList,
+    asatidzahList,
+    learningMediaList,
+    raporList,
     submitQuickDonation, 
     submitComplaint,
     syncStatus,
     syncErrorMessage
   } = useApp();
 
-  // Active section scroll tracking
-  const [activeTab, setActiveTab] = useState<'profile' | 'realisasi' | 'programs' | 'donasi' | 'pengaduan'>('profile');
+  // Active section tab tracking
+  const [activeTab, setActiveTab] = useState<'keuangan' | 'manajemen' | 'media' | 'pembangunan' | 'aduan'>('keuangan');
+
+  // Sub-tabs for MDT Management
+  const [mdtSubTab, setMdtSubTab] = useState<'santri' | 'asatidzah' | 'kurikulum' | 'rapor'>('santri');
+
+  // Interactive E-Kitab Reader Modal State
+  const [selectedKitab, setSelectedKitab] = useState<LearningMedia | null>(null);
+
+  // Santri & Rapor Search State
+  const [santriSearch, setSantriSearch] = useState('');
+  const [jenjangFilter, setJenjangFilter] = useState<'ALL' | 'Ula' | 'Wustha' | 'Ulya'>('ALL');
+  const [selectedRaporNis, setSelectedRaporNis] = useState<string>('');
+  const [mediaCategoryFilter, setMediaCategoryFilter] = useState<string>('ALL');
 
   // Donation form state
   const [donorName, setDonorName] = useState('');
@@ -186,16 +215,16 @@ export const DashboardPublic: React.FC<{ onEnterPortal: () => void }> = ({ onEnt
       <header className="sticky top-0 z-30 bg-[#114232] border-b-4 border-[#FCDC2A] text-white shadow-soft">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-3.5 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[#FCDC2A] rounded-full flex items-center justify-center font-bold text-[#114232] shadow-sm animate-pulse">
-              LJ
+            <div className="w-10 h-10 bg-[#FCDC2A] rounded-full flex items-center justify-center font-extrabold text-[#114232] shadow-sm animate-pulse text-sm">
+              MDT
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-bold text-lg text-white block tracking-wide leading-none">PANITIA PEMBANGUNGAN MDT AL JIHAD</span>
+                <span className="font-extrabold text-lg text-white block tracking-wide leading-none">MDT ALJIHAD GARUT</span>
                 {syncStatus === 'success' ? (
                   <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                    Sync Aktif
+                    Sync Cloud
                   </span>
                 ) : syncStatus === 'error' ? (
                   <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium bg-red-500/20 text-red-300 border border-red-500/30">
@@ -209,40 +238,45 @@ export const DashboardPublic: React.FC<{ onEnterPortal: () => void }> = ({ onEnt
                   </span>
                 )}
               </div>
-              <span className="text-[10px] font-mono uppercase tracking-widest text-[#FCDC2A] block mt-1">Garut • Amil Trusted</span>
+              <span className="text-[10px] font-mono uppercase tracking-widest text-[#FCDC2A] block mt-1">SOP Kemenag RI • Banyuresmi Garut</span>
             </div>
           </div>
 
           <nav className="flex items-center gap-1 md:gap-2 flex-wrap justify-center">
             <button 
-              onClick={() => { setActiveTab('profile'); document.getElementById('profil')?.scrollIntoView({ behavior: 'smooth' }); }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition ${activeTab === 'profile' ? 'bg-[#0a2e22] text-[#FCDC2A] border border-[#FCDC2A]/30' : 'text-white/80 hover:text-white hover:bg-white/5'}`}
+              onClick={() => setActiveTab('keuangan')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition flex items-center gap-1.5 ${activeTab === 'keuangan' ? 'bg-[#FCDC2A] text-[#114232] shadow-md' : 'text-white/80 hover:text-white hover:bg-white/10'}`}
             >
-              Profil & Visi
+              <TrendingUp size={14} />
+              Kas Keuangan Terbuka
             </button>
             <button 
-              onClick={() => { setActiveTab('realisasi'); document.getElementById('realisasi_kas')?.scrollIntoView({ behavior: 'smooth' }); }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition ${activeTab === 'realisasi' ? 'bg-[#0a2e22] text-[#FCDC2A] border border-[#FCDC2A]/30' : 'text-white/80 hover:text-white hover:bg-white/5'}`}
+              onClick={() => setActiveTab('manajemen')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition flex items-center gap-1.5 ${activeTab === 'manajemen' ? 'bg-[#FCDC2A] text-[#114232] shadow-md' : 'text-white/80 hover:text-white hover:bg-white/10'}`}
             >
-              Laporan Realisasi
+              <GraduationCap size={14} />
+              Manajemen MDT
             </button>
             <button 
-              onClick={() => { setActiveTab('programs'); document.getElementById('programs_panel')?.scrollIntoView({ behavior: 'smooth' }); }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition ${activeTab === 'programs' ? 'bg-[#0a2e22] text-[#FCDC2A] border border-[#FCDC2A]/30' : 'text-white/80 hover:text-white hover:bg-white/5'}`}
+              onClick={() => setActiveTab('media')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition flex items-center gap-1.5 ${activeTab === 'media' ? 'bg-[#FCDC2A] text-[#114232] shadow-md' : 'text-white/80 hover:text-white hover:bg-white/10'}`}
             >
-              Program Kerja
+              <BookOpen size={14} />
+              Media Ajar Digital
             </button>
             <button 
-              onClick={() => { setActiveTab('donasi'); document.getElementById('donasi_kilat')?.scrollIntoView({ behavior: 'smooth' }); }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition ${activeTab === 'donasi' ? 'bg-[#0a2e22] text-[#FCDC2A] border border-[#FCDC2A]/30' : 'text-white/80 hover:text-white hover:bg-white/5'}`}
+              onClick={() => setActiveTab('pembangunan')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition flex items-center gap-1.5 ${activeTab === 'pembangunan' ? 'bg-[#FCDC2A] text-[#114232] shadow-md' : 'text-white/80 hover:text-white hover:bg-white/10'}`}
             >
-              Donasi Cepat
+              <Building2 size={14} />
+              Panitia Pembangunan
             </button>
             <button 
-              onClick={() => { setActiveTab('pengaduan'); document.getElementById('pengaduan_panel')?.scrollIntoView({ behavior: 'smooth' }); }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition ${activeTab === 'pengaduan' ? 'bg-[#0a2e22] text-[#FCDC2A] border border-[#FCDC2A]/30' : 'text-white/80 hover:text-white hover:bg-white/5'}`}
+              onClick={() => setActiveTab('aduan')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition flex items-center gap-1.5 ${activeTab === 'aduan' ? 'bg-[#FCDC2A] text-[#114232] shadow-md' : 'text-white/80 hover:text-white hover:bg-white/10'}`}
             >
-              Pengaduan
+              <MessageSquare size={14} />
+              Pengaduan & FAQ
             </button>
           </nav>
 
@@ -260,7 +294,10 @@ export const DashboardPublic: React.FC<{ onEnterPortal: () => void }> = ({ onEnt
       <main className="max-w-7xl mx-auto px-4 md:px-8 pt-8 space-y-12">
         <PulseTitle />
 
-        {/* --- SECTION 1: PROFIL & VISI MISI --- */}
+        {/* --- TAB 1: KAS KEUANGAN TERBUKA --- */}
+        {activeTab === 'keuangan' && (
+          <div className="space-y-12 animate-fadeIn">
+            {/* --- SECTION 1: PROFIL & VISI MISI --- */}
         <section id="profil" className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch scroll-mt-24">
           {/* Card left: Visi Misi */}
           <div className="lg:col-span-8 bg-white border-l-8 border-[#114232] rounded-3xl p-6 md:p-8 space-y-6 shadow-soft hover:shadow-md transition-all relative overflow-hidden">
@@ -799,8 +836,28 @@ export const DashboardPublic: React.FC<{ onEnterPortal: () => void }> = ({ onEnt
             </div>
           </div>
         </section>
+        </div>
+        )}
 
-        {/* --- SECTION 5: ADUAN / LAPORAN KOMUNITAS --- */}
+        {/* --- TAB 2: MANAJEMEN MDT ALJIHAD (SOP KEMENAG) --- */}
+        {activeTab === 'manajemen' && (
+          <TabManajemenMDT 
+            santriList={santriList}
+            asatidzahList={asatidzahList}
+            raporList={raporList}
+          />
+        )}
+
+        {/* --- TAB 3: MEDIA AJAR & KITAB KUNING --- */}
+        {activeTab === 'media' && (
+          <TabMediaAjar 
+            learningMediaList={learningMediaList}
+            onSelectKitab={setSelectedKitab}
+          />
+        )}
+
+        {/* --- TAB 5: ADUAN / LAPORAN KOMUNITAS --- */}
+        {activeTab === 'aduan' && (
         <section id="pengaduan_panel" className="bg-white rounded-3xl p-6 md:p-8 space-y-6 scroll-mt-24 shadow-soft border border-gray-200 border-t-4 border-t-[#FCDC2A]">
           <div className="space-y-1">
             <span className="text-[10px] font-mono tracking-widest text-[#87A922] uppercase font-bold">Saluran Transparansi</span>
@@ -942,9 +999,11 @@ export const DashboardPublic: React.FC<{ onEnterPortal: () => void }> = ({ onEnt
             </div>
           </div>
         </section>
+        )}
 
-        {/* --- SECTION 6: DOKUMENTASI & PROGRES PEMBANGUNAN MDT --- */}
-        <section className="space-y-6">
+        {/* --- TAB 4: PANITIA PEMBANGUNAN MDT ALJIHAD --- */}
+        {activeTab === 'pembangunan' && (
+        <section className="space-y-6 animate-fadeIn">
           <div className="space-y-1">
             <span className="text-[10px] font-mono tracking-widest text-[#87A922] uppercase font-bold">Bukti Fisik & Progres Nyata</span>
             <h2 className="text-2xl font-black text-[#114232] flex items-center gap-2">
@@ -1026,6 +1085,7 @@ export const DashboardPublic: React.FC<{ onEnterPortal: () => void }> = ({ onEnt
             )}
           </div>
         </section>
+        )}
       </main>
 
       {/* FOOTER */}
@@ -1042,6 +1102,90 @@ export const DashboardPublic: React.FC<{ onEnterPortal: () => void }> = ({ onEnt
           </div>
         </div>
       </footer>
+
+      {/* --- E-KITAB READER MODAL --- */}
+      {selectedKitab && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white border-2 border-[#114232] w-full max-w-2xl rounded-3xl p-6 md:p-8 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto relative">
+            <div className="flex justify-between items-start border-b border-gray-100 pb-4">
+              <div>
+                <span className="text-[10px] font-mono font-bold text-[#87A922] uppercase block">
+                  Pustaka E-Kitab MDT ALJIHAD • {selectedKitab.kategori}
+                </span>
+                <h3 className="text-xl font-black text-[#114232]">{selectedKitab.title}</h3>
+                <span className="text-xs text-gray-500 font-medium block mt-0.5">
+                  Karya / Pengarang: {selectedKitab.pengarang} • Peruntukan: {selectedKitab.jenjangTarget}
+                </span>
+              </div>
+              <button
+                onClick={() => setSelectedKitab(null)}
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center font-bold text-sm cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {selectedKitab.mediaType === 'video' ? (
+              <div className="space-y-4">
+                <div className="aspect-video bg-black rounded-2xl overflow-hidden flex items-center justify-center">
+                  {selectedKitab.fileUrl ? (
+                    <video src={selectedKitab.fileUrl} controls className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="p-8 text-center text-white space-y-2">
+                      <Video size={48} className="mx-auto text-[#FCDC2A]" />
+                      <p className="text-xs">Modul Video Praktis - {selectedKitab.title}</p>
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-gray-700 leading-relaxed bg-gray-50 p-4 rounded-xl border border-gray-200">
+                  {selectedKitab.description}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Matan Arab Section */}
+                <div className="bg-[#fcfbf7] p-6 rounded-2xl border border-amber-200/80 space-y-3 text-right">
+                  <span className="text-[10px] font-mono font-bold text-amber-800 uppercase block text-left">
+                    Matan Bahasa Arab
+                  </span>
+                  <p className="text-2xl leading-loose font-serif text-[#114232]" dir="rtl">
+                    {selectedKitab.matanArab || "بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ. الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ وَالصَّلَاةُ وَالسَّلَامُ عَلَى أَشْرَفِ الْأَنْبِيَاءِ وَالْمُرْسَلِينَ."}
+                  </p>
+                </div>
+
+                {/* Terjemahan Indonesia */}
+                <div className="bg-emerald-50/60 p-5 rounded-2xl border border-emerald-100 space-y-2">
+                  <span className="text-[10px] font-mono font-bold text-[#114232] uppercase block">
+                    Terjemahan Bahasa Indonesia
+                  </span>
+                  <p className="text-xs text-gray-800 leading-relaxed italic">
+                    "{selectedKitab.terjemahan || selectedKitab.description}"
+                  </p>
+                </div>
+
+                {/* Ringkasan Hukum / Pelajaran */}
+                <div className="bg-white p-5 rounded-2xl border border-gray-200 space-y-2">
+                  <span className="text-[10px] font-mono font-bold text-gray-400 uppercase block">
+                    Ringkasan Hukum & Catatan Pengajar
+                  </span>
+                  <p className="text-xs text-gray-700 leading-relaxed">
+                    {selectedKitab.ringkasan || "Kitab ini dipelajari santri MDT Al Jihad untuk memperdalam kaidah dasar fiqih ibadah dan pemahaman tauhid sejak dini."}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-3 pt-2 border-t border-gray-100">
+              <button
+                onClick={() => setSelectedKitab(null)}
+                className="px-6 py-2.5 bg-[#114232] text-white font-bold rounded-xl text-xs hover:bg-[#0a2e22] transition cursor-pointer"
+              >
+                Selesai Membaca
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* --- RECEIPT MODAL POPUP --- */}
       {activeReceipt && (

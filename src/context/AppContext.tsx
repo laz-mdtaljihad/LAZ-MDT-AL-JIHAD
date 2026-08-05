@@ -18,7 +18,11 @@ import {
   FundType,
   BeneficiaryCategory,
   ApprovalStatus,
-  ProjectProgress
+  ProjectProgress,
+  Santri,
+  Asatidzah,
+  LearningMedia,
+  RaporSantri
 } from '../types';
 
 interface AppContextType {
@@ -32,6 +36,12 @@ interface AppContextType {
   auditLogs: AuditLog[];
   complaints: Complaint[];
   documentations: ProjectProgress[];
+
+  // MDT & Media Ajar State
+  santriList: Santri[];
+  asatidzahList: Asatidzah[];
+  learningMediaList: LearningMedia[];
+  raporList: RaporSantri[];
   
   // Cloud Sync State
   syncStatus: 'connecting' | 'success' | 'error';
@@ -59,6 +69,23 @@ interface AppContextType {
   addDocumentation: (doc: Omit<ProjectProgress, 'id'>) => void;
   updateDocumentation: (id: string, doc: Partial<ProjectProgress>) => void;
   deleteDocumentation: (id: string) => void;
+
+  // MDT Management Actions (Santri, Asatidzah, Rapor, Media Ajar)
+  addSantri: (santri: Omit<Santri, 'id'>) => void;
+  updateSantri: (id: string, santri: Partial<Santri>) => void;
+  deleteSantri: (id: string) => void;
+
+  addAsatidzah: (asatidzah: Omit<Asatidzah, 'id'>) => void;
+  updateAsatidzah: (id: string, asatidzah: Partial<Asatidzah>) => void;
+  deleteAsatidzah: (id: string) => void;
+
+  addLearningMedia: (media: Omit<LearningMedia, 'id'>) => void;
+  updateLearningMedia: (id: string, media: Partial<LearningMedia>) => void;
+  deleteLearningMedia: (id: string) => void;
+
+  addRapor: (rapor: Omit<RaporSantri, 'id'>) => void;
+  updateRapor: (id: string, rapor: Partial<RaporSantri>) => void;
+  deleteRapor: (id: string) => void;
   
   // Approval Actions (Chairman / Ketua)
   approveTransaction: (id: string) => void;
@@ -157,6 +184,160 @@ const DEFAULT_DOCUMENTATIONS: ProjectProgress[] = [
   }
 ];
 
+const DEFAULT_SANTRI: Santri[] = [
+  {
+    id: 'STR001',
+    nis: '3205012026001',
+    name: 'Ahmad Syauqi Ramadhan',
+    jenjang: 'Ula',
+    kelas: '2 Ula A',
+    gender: 'L',
+    parentName: 'H. Abdul Ghani',
+    parentPhone: '081234567890',
+    status: 'Aktif',
+    hafalanJuzAmma: 'Juz 30 (An-Naba s/d An-Nas Selesai)',
+    alamat: 'Kampus MDT Al Jihad Bagendit Garut'
+  },
+  {
+    id: 'STR002',
+    nis: '3205012026002',
+    name: 'Nur Syifa Aulia',
+    jenjang: 'Ula',
+    kelas: '3 Ula B',
+    gender: 'P',
+    parentName: 'Ibu Maryam',
+    parentPhone: '081987654321',
+    status: 'Aktif',
+    hafalanJuzAmma: 'Surat Yaasiin & Juz 30 Complete',
+    alamat: 'Kp. Sukatani RT 02/05 Bagendit'
+  },
+  {
+    id: 'STR003',
+    nis: '3205012026003',
+    name: 'M. Rizky Pratama',
+    jenjang: 'Wustha',
+    kelas: '1 Wustha',
+    gender: 'L',
+    parentName: 'Bpk. Ahmad Sobari',
+    parentPhone: '082112233445',
+    status: 'Aktif',
+    hafalanJuzAmma: 'Juz 30 & Hadits Arbain 1 - 15',
+    alamat: 'Banyuresmi Garut'
+  },
+  {
+    id: 'STR004',
+    nis: '3205012026004',
+    name: 'Siti Fatimah Zahrani',
+    jenjang: 'Ula',
+    kelas: '1 Ula',
+    gender: 'P',
+    parentName: 'Ibu Salmah',
+    parentPhone: '085711223344',
+    status: 'Aktif',
+    hafalanJuzAmma: 'Surat Al-Fatihah, An-Nas s/d Al-Humazah',
+    alamat: 'Bagendit Garut'
+  }
+];
+
+const DEFAULT_ASATIDZAH: Asatidzah[] = [
+  {
+    id: 'UST001',
+    npk: '19880412202601',
+    name: 'Ustadz M. Farhan, S.Pd.I',
+    subject: 'Fiqih Safinatun Najah & Tajwid',
+    phone: '081223344556',
+    education: 'Alumni Pesantren Sukamanah / S1 PAI',
+    status: 'Aktif'
+  },
+  {
+    id: 'UST002',
+    npk: '19920815202602',
+    name: 'Ustadzah Halimatus Sa\'diyah',
+    subject: 'Aqidah Akhlaq & Tahfidz Juz Amma',
+    phone: '081334455667',
+    education: 'Hafidzah 30 Juz / Mahasiswi STAI Garut',
+    status: 'Aktif'
+  },
+  {
+    id: 'UST003',
+    npk: '19850110202603',
+    name: 'Ustadz Syarif Hidayatullah, M.Ag.',
+    subject: 'Bahasa Arab & Sejarah Kebudayaan Islam (SKI)',
+    phone: '081556677889',
+    education: 'S2 UIN Sunan Gunung Djati / Pengajar Kemenag',
+    status: 'Aktif'
+  }
+];
+
+const DEFAULT_LEARNING_MEDIA: LearningMedia[] = [
+  {
+    id: 'MED001',
+    title: 'Kitab Safinatun Najah - Bab Fiqih Thaharah & Sholat',
+    category: 'Kitab Kuning',
+    author: 'Syaikh Salim bin Sumair Al-Hadhrami',
+    description: 'Matan dasar fiqih madzhab Syafi\'i untuk santri Diniyah Takmiliyah Ula. Dilengkapi terjemah Sunda/Indonesia dan penjelasannya.',
+    contentSummary: 'Rukun Islam ada 5, Rukun Iman ada 6. Syarat syah sholat ada 8 perkara: Suci dari hadas besar & kecil, suci pakaian tempat dari najis, menutup aurat, menghadap kiblat, masuk waktu, tahu fardhu sholat.',
+    mediaUrl: 'https://images.unsplash.com/photo-1585036156171-384164a8c675?auto=format&fit=crop&q=80&w=800',
+    type: 'kitab',
+    downloadable: true
+  },
+  {
+    id: 'MED002',
+    title: 'Aqidatul Awam - Nadzom Tauhid Diniyah',
+    category: 'Aqidah Akhlaq',
+    author: 'Syaikh Ahmad Al-Marzuki',
+    description: 'Ringkasan nadzom tauhid memuat 20 Sifat Wajib Allah, Sifat Mustahil, Jaiz, serta nama Rasul dan Kitab Suci.',
+    contentSummary: 'Abda\'u bismillahi warrahmani • wa birrahimi da-imil ihsani. Wajib bagi setiap mukallaf mengetahui 20 Sifat Wajib Allah: Wujud, Qidam, Baqa, Mukhalafatu lil hawaditsi...',
+    mediaUrl: 'https://images.unsplash.com/photo-1609599006353-e629aa5cfb71?auto=format&fit=crop&q=80&w=800',
+    type: 'kitab',
+    downloadable: true
+  },
+  {
+    id: 'MED003',
+    title: 'Panduan Tajwid Al-Qur\'an & Ghorib Juz Amma',
+    category: 'Al-Qur\'an & Tajwid',
+    author: 'Tim Kurikulum MDT Kemenag',
+    description: 'Modul praktis hukum Nun Mati/Tanwin, Mim Mati, Hukum Mad, Qalqalah, Makhorijul Huruf, serta ayat ghorib di Juz 30.',
+    contentSummary: 'Hukum Izhar Halqi dibaca jelas apabila Nun suci/tanwin bertemu Hamzah, Ha, Kha, ' + '\'Ain, Ghain, Ha. Idgham Bighunnah dibaca lebur dengung bertemu Ya, Nun, Mim, Wau.',
+    mediaUrl: 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=800',
+    type: 'modul',
+    downloadable: true
+  },
+  {
+    id: 'MED004',
+    title: 'Video Peragaan Wudhu & Sholat Khusyu Sesuai Sunnah',
+    category: 'Video & Audio Pembelajaran',
+    author: 'Tim Media MDT Al Jihad',
+    description: 'Video tuntunan visual cara wudhu yang sempurna dan gerak-gerik sholat beserta bacaan latin & artinya.',
+    contentSummary: 'Peragaan langkah demi langkah Niat Wudhu, Basuh Muka, Tangan sampai Siku, Usap Kepala, Telinga, dan Basuh Kaki sampai Mata Kaki.',
+    mediaUrl: 'https://assets.mixkit.co/videos/preview/mixkit-man-reading-the-holy-quran-43026-large.mp4',
+    type: 'video',
+    downloadable: false
+  }
+];
+
+const DEFAULT_RAPOR: RaporSantri[] = [
+  {
+    id: 'RAP001',
+    santriId: 'STR001',
+    santriName: 'Ahmad Syauqi Ramadhan',
+    nis: '3205012026001',
+    kelas: '2 Ula A',
+    semester: 'Ganjil',
+    tahunAjaran: '2025/2026',
+    nilai: {
+      alquranHadits: 88,
+      aqidahAkhlaq: 90,
+      fiqihIbadah: 85,
+      ski: 82,
+      bahasaArab: 80,
+      tajwid: 88,
+      praktekIbadah: 92
+    },
+    catatanUstadz: 'Ananda Syauqi sangat rajin dan hafalan Juz 30 lancar. Tingkatkan kelancaran makhraj huruf Bahasa Arab.'
+  }
+];
+
 // --- APP PROVIDER COMPONENT ---
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -217,6 +398,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [documentations, setDocumentations] = useState<ProjectProgress[]>(() => {
     const saved = localStorage.getItem('laz_documentations_v2');
     return saved ? JSON.parse(saved) : DEFAULT_DOCUMENTATIONS;
+  });
+
+  const [santriList, setSantriList] = useState<Santri[]>(() => {
+    const saved = localStorage.getItem('mdt_santri_v1');
+    return saved ? JSON.parse(saved) : DEFAULT_SANTRI;
+  });
+
+  const [asatidzahList, setAsatidzahList] = useState<Asatidzah[]>(() => {
+    const saved = localStorage.getItem('mdt_asatidzah_v1');
+    return saved ? JSON.parse(saved) : DEFAULT_ASATIDZAH;
+  });
+
+  const [learningMediaList, setLearningMediaList] = useState<LearningMedia[]>(() => {
+    const saved = localStorage.getItem('mdt_media_v1');
+    return saved ? JSON.parse(saved) : DEFAULT_LEARNING_MEDIA;
+  });
+
+  const [raporList, setRaporList] = useState<RaporSantri[]>(() => {
+    const saved = localStorage.getItem('mdt_rapor_v1');
+    return saved ? JSON.parse(saved) : DEFAULT_RAPOR;
   });
 
   // --- Real-time synchronization is established with Firebase Firestore ---
@@ -346,6 +547,78 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }, (error) => {
         handleError(error);
       }),
+
+      onSnapshot(collection(db, 'santri'), (snapshot) => {
+        const list: Santri[] = [];
+        snapshot.forEach((doc) => {
+          list.push(doc.data() as Santri);
+        });
+        if (snapshot.empty) {
+          DEFAULT_SANTRI.forEach((s) => {
+            setDoc(doc(db, 'santri', s.id), s).catch(err => console.error('Error seeding santri:', err));
+          });
+          setSantriList(DEFAULT_SANTRI);
+        } else {
+          list.sort((a, b) => a.id.localeCompare(b.id));
+          setSantriList(list);
+          localStorage.setItem('mdt_santri_v1', JSON.stringify(list));
+        }
+        checkSuccess();
+      }, (error) => handleError(error)),
+
+      onSnapshot(collection(db, 'asatidzah'), (snapshot) => {
+        const list: Asatidzah[] = [];
+        snapshot.forEach((doc) => {
+          list.push(doc.data() as Asatidzah);
+        });
+        if (snapshot.empty) {
+          DEFAULT_ASATIDZAH.forEach((u) => {
+            setDoc(doc(db, 'asatidzah', u.id), u).catch(err => console.error('Error seeding asatidzah:', err));
+          });
+          setAsatidzahList(DEFAULT_ASATIDZAH);
+        } else {
+          list.sort((a, b) => a.id.localeCompare(b.id));
+          setAsatidzahList(list);
+          localStorage.setItem('mdt_asatidzah_v1', JSON.stringify(list));
+        }
+        checkSuccess();
+      }, (error) => handleError(error)),
+
+      onSnapshot(collection(db, 'learning_media'), (snapshot) => {
+        const list: LearningMedia[] = [];
+        snapshot.forEach((doc) => {
+          list.push(doc.data() as LearningMedia);
+        });
+        if (snapshot.empty) {
+          DEFAULT_LEARNING_MEDIA.forEach((m) => {
+            setDoc(doc(db, 'learning_media', m.id), m).catch(err => console.error('Error seeding media:', err));
+          });
+          setLearningMediaList(DEFAULT_LEARNING_MEDIA);
+        } else {
+          list.sort((a, b) => a.id.localeCompare(b.id));
+          setLearningMediaList(list);
+          localStorage.setItem('mdt_media_v1', JSON.stringify(list));
+        }
+        checkSuccess();
+      }, (error) => handleError(error)),
+
+      onSnapshot(collection(db, 'rapor_santri'), (snapshot) => {
+        const list: RaporSantri[] = [];
+        snapshot.forEach((doc) => {
+          list.push(doc.data() as RaporSantri);
+        });
+        if (snapshot.empty) {
+          DEFAULT_RAPOR.forEach((r) => {
+            setDoc(doc(db, 'rapor_santri', r.id), r).catch(err => console.error('Error seeding rapor:', err));
+          });
+          setRaporList(DEFAULT_RAPOR);
+        } else {
+          list.sort((a, b) => a.id.localeCompare(b.id));
+          setRaporList(list);
+          localStorage.setItem('mdt_rapor_v1', JSON.stringify(list));
+        }
+        checkSuccess();
+      }, (error) => handleError(error)),
     ];
 
     return () => {
@@ -357,6 +630,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     localStorage.setItem('laz_current_role_v2', currentRole);
   }, [currentRole]);
+
+  useEffect(() => {
+    localStorage.setItem('mdt_santri_v1', JSON.stringify(santriList));
+  }, [santriList]);
+
+  useEffect(() => {
+    localStorage.setItem('mdt_asatidzah_v1', JSON.stringify(asatidzahList));
+  }, [asatidzahList]);
+
+  useEffect(() => {
+    localStorage.setItem('mdt_media_v1', JSON.stringify(learningMediaList));
+  }, [learningMediaList]);
+
+  useEffect(() => {
+    localStorage.setItem('mdt_rapor_v1', JSON.stringify(raporList));
+  }, [raporList]);
 
   useEffect(() => {
     localStorage.setItem('laz_incoming_funds_v2', JSON.stringify(incomingFunds));
@@ -795,8 +1084,98 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
+  // --- ACTIONS: MDT MANAGEMENT (SANTRI, ASATIDZAH, MEDIA AJAR, RAPOR) ---
+
+  const addSantri = (santriData: Omit<Santri, 'id'>) => {
+    const id = `STR${Math.floor(100 + Math.random() * 900)}`;
+    const newSantri: Santri = { ...santriData, id };
+    setDoc(doc(db, 'santri', id), newSantri).catch(console.error);
+    writeLog('CREATE', 'BENEFICIARY', id, `Pendaftaran Santri Baru: "${santriData.name}" (NIS: ${santriData.nis}, Kelas: ${santriData.kelas}).`);
+  };
+
+  const updateSantri = (id: string, updatedFields: Partial<Santri>) => {
+    const original = santriList.find(s => s.id === id);
+    if (!original) return;
+    const merged = { ...original, ...updatedFields };
+    setDoc(doc(db, 'santri', id), merged).catch(console.error);
+    writeLog('UPDATE', 'BENEFICIARY', id, `Memperbarui data Santri: "${original.name}".`);
+  };
+
+  const deleteSantri = (id: string) => {
+    const original = santriList.find(s => s.id === id);
+    if (!original) return;
+    deleteDoc(doc(db, 'santri', id)).catch(console.error);
+    writeLog('DELETE', 'BENEFICIARY', id, `Menghapus data Santri: "${original.name}".`);
+  };
+
+  const addAsatidzah = (asatidzahData: Omit<Asatidzah, 'id'>) => {
+    const id = `UST${Math.floor(100 + Math.random() * 900)}`;
+    const newUst: Asatidzah = { ...asatidzahData, id };
+    setDoc(doc(db, 'asatidzah', id), newUst).catch(console.error);
+    writeLog('CREATE', 'BENEFICIARY', id, `Menambahkan Pengajar/Guru MDT: "${asatidzahData.name}".`);
+  };
+
+  const updateAsatidzah = (id: string, updatedFields: Partial<Asatidzah>) => {
+    const original = asatidzahList.find(u => u.id === id);
+    if (!original) return;
+    const merged = { ...original, ...updatedFields };
+    setDoc(doc(db, 'asatidzah', id), merged).catch(console.error);
+    writeLog('UPDATE', 'BENEFICIARY', id, `Memperbarui data Guru: "${original.name}".`);
+  };
+
+  const deleteAsatidzah = (id: string) => {
+    const original = asatidzahList.find(u => u.id === id);
+    if (!original) return;
+    deleteDoc(doc(db, 'asatidzah', id)).catch(console.error);
+    writeLog('DELETE', 'BENEFICIARY', id, `Menghapus data Guru: "${original.name}".`);
+  };
+
+  const addLearningMedia = (mediaData: Omit<LearningMedia, 'id'>) => {
+    const id = `MED${Math.floor(100 + Math.random() * 900)}`;
+    const newMedia: LearningMedia = { ...mediaData, id };
+    setDoc(doc(db, 'learning_media', id), newMedia).catch(console.error);
+    writeLog('CREATE', 'PROGRAM', id, `Menerbitkan Media Ajar Digital: "${mediaData.title}".`);
+  };
+
+  const updateLearningMedia = (id: string, updatedFields: Partial<LearningMedia>) => {
+    const original = learningMediaList.find(m => m.id === id);
+    if (!original) return;
+    const merged = { ...original, ...updatedFields };
+    setDoc(doc(db, 'learning_media', id), merged).catch(console.error);
+    writeLog('UPDATE', 'PROGRAM', id, `Memperbarui Media Ajar: "${original.title}".`);
+  };
+
+  const deleteLearningMedia = (id: string) => {
+    const original = learningMediaList.find(m => m.id === id);
+    if (!original) return;
+    deleteDoc(doc(db, 'learning_media', id)).catch(console.error);
+    writeLog('DELETE', 'PROGRAM', id, `Menghapus Media Ajar: "${original.title}".`);
+  };
+
+  const addRapor = (raporData: Omit<RaporSantri, 'id'>) => {
+    const id = `RAP${Math.floor(100 + Math.random() * 900)}`;
+    const newRapor: RaporSantri = { ...raporData, id };
+    setDoc(doc(db, 'rapor_santri', id), newRapor).catch(console.error);
+    writeLog('CREATE', 'BENEFICIARY', id, `Input Rapor Santri: "${raporData.santriName}" (${raporData.semester} ${raporData.tahunAjaran}).`);
+  };
+
+  const updateRapor = (id: string, updatedFields: Partial<RaporSantri>) => {
+    const original = raporList.find(r => r.id === id);
+    if (!original) return;
+    const merged = { ...original, ...updatedFields };
+    setDoc(doc(db, 'rapor_santri', id), merged).catch(console.error);
+    writeLog('UPDATE', 'BENEFICIARY', id, `Edit Rapor Santri: "${original.santriName}".`);
+  };
+
+  const deleteRapor = (id: string) => {
+    const original = raporList.find(r => r.id === id);
+    if (!original) return;
+    deleteDoc(doc(db, 'rapor_santri', id)).catch(console.error);
+    writeLog('DELETE', 'BENEFICIARY', id, `Hapus Rapor Santri: "${original.santriName}".`);
+  };
+
   const resetToDefault = async () => {
-    if (confirm('Apakah Anda yakin ingin memulihkan data bawaan awal LAZ? Semua simulasi data Anda saat ini di database cloud akan dihapus.')) {
+    if (confirm('Apakah Anda yakin ingin memulihkan data bawaan awal MDT Al Jihad? Semua data simulasi saat ini akan diperbarui.')) {
       // Clear Firestore collections
       for (const item of incomingFunds) {
         await deleteDoc(doc(db, 'incoming_funds', item.id)).catch(console.error);
@@ -816,6 +1195,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       for (const item of documentations) {
         await deleteDoc(doc(db, 'documentations', item.id)).catch(console.error);
       }
+      for (const item of santriList) {
+        await deleteDoc(doc(db, 'santri', item.id)).catch(console.error);
+      }
+      for (const item of asatidzahList) {
+        await deleteDoc(doc(db, 'asatidzah', item.id)).catch(console.error);
+      }
+      for (const item of learningMediaList) {
+        await deleteDoc(doc(db, 'learning_media', item.id)).catch(console.error);
+      }
+      for (const item of raporList) {
+        await deleteDoc(doc(db, 'rapor_santri', item.id)).catch(console.error);
+      }
       // Overwrite programs with initial
       for (const p of DEFAULT_PROGRAMS) {
         await setDoc(doc(db, 'programs', p.id), p).catch(console.error);
@@ -823,6 +1214,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // Reseed documentations
       for (const d of DEFAULT_DOCUMENTATIONS) {
         await setDoc(doc(db, 'documentations', d.id), d).catch(console.error);
+      }
+      for (const s of DEFAULT_SANTRI) {
+        await setDoc(doc(db, 'santri', s.id), s).catch(console.error);
+      }
+      for (const u of DEFAULT_ASATIDZAH) {
+        await setDoc(doc(db, 'asatidzah', u.id), u).catch(console.error);
+      }
+      for (const m of DEFAULT_LEARNING_MEDIA) {
+        await setDoc(doc(db, 'learning_media', m.id), m).catch(console.error);
+      }
+      for (const r of DEFAULT_RAPOR) {
+        await setDoc(doc(db, 'rapor_santri', r.id), r).catch(console.error);
       }
       setCurrentRole('umum');
     }
@@ -840,6 +1243,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       auditLogs,
       complaints,
       documentations,
+      santriList,
+      asatidzahList,
+      learningMediaList,
+      raporList,
       syncStatus,
       syncErrorMessage,
       addIncomingFund,
@@ -856,6 +1263,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       addDocumentation,
       updateDocumentation,
       deleteDocumentation,
+      addSantri,
+      updateSantri,
+      deleteSantri,
+      addAsatidzah,
+      updateAsatidzah,
+      deleteAsatidzah,
+      addLearningMedia,
+      updateLearningMedia,
+      deleteLearningMedia,
+      addRapor,
+      updateRapor,
+      deleteRapor,
       approveTransaction,
       rejectTransaction,
       submitQuickDonation,

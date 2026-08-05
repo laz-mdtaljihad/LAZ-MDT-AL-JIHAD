@@ -42,8 +42,14 @@ import {
   Lock,
   Image as ImageIcon,
   Video,
-  Play
+  Play,
+  GraduationCap,
+  Award
 } from 'lucide-react';
+import { AdminSantriView } from './admin/AdminSantriView';
+import { AdminAsatidzahView } from './admin/AdminAsatidzahView';
+import { AdminMediaView } from './admin/AdminMediaView';
+import { AdminRaporView } from './admin/AdminRaporView';
 
 export const DashboardAdmin: React.FC<{ onExitPortal: () => void }> = ({ onExitPortal }) => {
   const {
@@ -76,11 +82,27 @@ export const DashboardAdmin: React.FC<{ onExitPortal: () => void }> = ({ onExitP
     documentations,
     addDocumentation,
     updateDocumentation,
-    deleteDocumentation
+    deleteDocumentation,
+    santriList,
+    addSantri,
+    updateSantri,
+    deleteSantri,
+    asatidzahList,
+    addAsatidzah,
+    updateAsatidzah,
+    deleteAsatidzah,
+    learningMediaList,
+    addLearningMedia,
+    updateLearningMedia,
+    deleteLearningMedia,
+    raporList,
+    addRaporSantri,
+    updateRaporSantri,
+    deleteRaporSantri
   } = useApp();
 
   // Active admin tab inside view
-  const [adminTab, setAdminTab] = useState<'himpun' | 'salur' | 'mustahik' | 'program' | 'dokumentasi' | 'aduan' | 'audit'>('himpun');
+  const [adminTab, setAdminTab] = useState<'himpun' | 'salur' | 'mustahik' | 'program' | 'dokumentasi' | 'santri' | 'asatidzah' | 'media' | 'rapor' | 'aduan' | 'audit'>('himpun');
 
   // Documentation progress form states
   const [isDocModalOpen, setIsDocModalOpen] = useState(false);
@@ -770,6 +792,71 @@ export const DashboardAdmin: React.FC<{ onExitPortal: () => void }> = ({ onExitP
               <span className="text-[10px] font-mono px-1.5 py-0.5 bg-black/40 rounded text-[#FCDC2A]">{documentations.length}</span>
             </button>
 
+            {/* --- MDT ALJIHAD MANAGEMENT TABS --- */}
+            <div className="pt-2 pb-1 text-[10px] font-mono font-bold text-[#87A922] uppercase tracking-wider">
+              Manajemen MDT Al Jihad
+            </div>
+
+            <button
+              onClick={() => { setAdminTab('santri'); setSearchTerm(''); }}
+              className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between transition cursor-pointer select-none ${
+                adminTab === 'santri'
+                  ? 'bg-emerald-800 text-white'
+                  : 'text-neutral-400 hover:text-white hover:bg-neutral-900'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Users size={14} />
+                <span>Data Santri</span>
+              </div>
+              <span className="text-[10px] font-mono px-1.5 py-0.5 bg-black/40 rounded text-emerald-300">{santriList.length}</span>
+            </button>
+
+            <button
+              onClick={() => { setAdminTab('asatidzah'); setSearchTerm(''); }}
+              className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between transition cursor-pointer select-none ${
+                adminTab === 'asatidzah'
+                  ? 'bg-emerald-800 text-white'
+                  : 'text-neutral-400 hover:text-white hover:bg-neutral-900'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <GraduationCap size={14} />
+                <span>Dewan Asatidzah</span>
+              </div>
+              <span className="text-[10px] font-mono px-1.5 py-0.5 bg-black/40 rounded text-amber-300">{asatidzahList.length}</span>
+            </button>
+
+            <button
+              onClick={() => { setAdminTab('media'); setSearchTerm(''); }}
+              className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between transition cursor-pointer select-none ${
+                adminTab === 'media'
+                  ? 'bg-emerald-800 text-white'
+                  : 'text-neutral-400 hover:text-white hover:bg-neutral-900'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <BookOpen size={14} />
+                <span>Media Ajar & Kitab</span>
+              </div>
+              <span className="text-[10px] font-mono px-1.5 py-0.5 bg-black/40 rounded text-emerald-300">{learningMediaList.length}</span>
+            </button>
+
+            <button
+              onClick={() => { setAdminTab('rapor'); setSearchTerm(''); }}
+              className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between transition cursor-pointer select-none ${
+                adminTab === 'rapor'
+                  ? 'bg-emerald-800 text-white'
+                  : 'text-neutral-400 hover:text-white hover:bg-neutral-900'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Award size={14} />
+                <span>Rapor Santri</span>
+              </div>
+              <span className="text-[10px] font-mono px-1.5 py-0.5 bg-black/40 rounded text-[#FCDC2A]">{raporList.length}</span>
+            </button>
+
             <button
               onClick={() => { setAdminTab('aduan'); setSearchTerm(''); }}
               className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between transition cursor-pointer select-none ${
@@ -1386,6 +1473,47 @@ export const DashboardAdmin: React.FC<{ onExitPortal: () => void }> = ({ onExitP
                   </table>
                 </div>
               </div>
+            )}
+
+            {/* --- WORKSPACE 4.5A: DATA SANTRI --- */}
+            {adminTab === 'santri' && (
+              <AdminSantriView
+                santriList={santriList}
+                onAddSantri={addSantri}
+                onUpdateSantri={updateSantri}
+                onDeleteSantri={deleteSantri}
+              />
+            )}
+
+            {/* --- WORKSPACE 4.5B: DEWAN ASATIDZAH --- */}
+            {adminTab === 'asatidzah' && (
+              <AdminAsatidzahView
+                asatidzahList={asatidzahList}
+                onAddAsatidzah={addAsatidzah}
+                onUpdateAsatidzah={updateAsatidzah}
+                onDeleteAsatidzah={deleteAsatidzah}
+              />
+            )}
+
+            {/* --- WORKSPACE 4.5C: MEDIA AJAR & KITAB KUNING --- */}
+            {adminTab === 'media' && (
+              <AdminMediaView
+                learningMediaList={learningMediaList}
+                onAddMedia={addLearningMedia}
+                onUpdateMedia={updateLearningMedia}
+                onDeleteMedia={deleteLearningMedia}
+              />
+            )}
+
+            {/* --- WORKSPACE 4.5D: RAPOR SANTRI --- */}
+            {adminTab === 'rapor' && (
+              <AdminRaporView
+                raporList={raporList}
+                santriList={santriList}
+                onAddRapor={addRaporSantri}
+                onUpdateRapor={updateRaporSantri}
+                onDeleteRapor={deleteRaporSantri}
+              />
             )}
 
             {/* --- WORKSPACE 5: ASPIRASI / COMPLAINTS (aduan) --- */}

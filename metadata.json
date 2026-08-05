@@ -1,6 +1,6 @@
 {
-  "name": "PANITIA PEMBANGUNGAN MDT AL JIHAD",
-  "description": "Aplikasi transparansi kas, program kemaslahatan, dan laporan progres rehabilitasi/pembangunan Madrasah Diniyyah Takmiliyyah Al Jihad, Bagendit Garut.",
+  "name": "MDT ALJIHAD",
+  "description": "Sistem Manajemen MDT, Media Ajar Digital, Panitia Pembangunan, & Akuntabilitas Kas Keuangan Terbuka - Madrasah Diniyyah Takmiliyyah Al Jihad Garut (Kemenag SOP).",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

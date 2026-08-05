@@ -11,27 +11,27 @@ export const MovingTitle: React.FC = () => {
       {/* Running/marquee ticker text along with gold glow */}
       <div className="flex whitespace-nowrap animate-marquee">
         <span className="mx-4 text-xs font-mono font-bold tracking-widest text-[#FCDC2A] uppercase flex items-center gap-2">
-          🌙 PANITIA PEMBANGUNGAN MDT AL JIHAD BANYURESMI GARUT
+          🌙 MADRASAH DINIYYAH TAKMILIYYAH (MDT) ALJIHAD BANYURESMI GARUT
           <span className="h-2 w-2 rounded-full bg-[#87A922] inline-block animate-pulse"></span>
-          SESUAI SYARIAT • AMANAH • TRANSPARAN • AKUNTABEL • TEPAT SASARAN
+          MANAJEMEN MDT • MEDIA AJAR DIGITAL • PANITIA PEMBANGUNAN • KAS KEUANGAN TERBUKA
           <span className="h-2 w-2 rounded-full bg-white inline-block"></span>
-          UNIT DI BAWAH YAYASAN AL HAMID HADUM
+          STANDAR OPERASIONAL PROSEDUR (SOP) KEMENAG RI
           <span className="h-2 w-2 rounded-full bg-[#FCDC2A] inline-block"></span>
         </span>
         <span className="mx-4 text-xs font-mono font-bold tracking-widest text-[#FCDC2A] uppercase flex items-center gap-2" aria-hidden="true">
-          🌙 PANITIA PEMBANGUNGAN MDT AL JIHAD BANYURESMI GARUT
+          🌙 MADRASAH DINIYYAH TAKMILIYYAH (MDT) ALJIHAD BANYURESMI GARUT
           <span className="h-2 w-2 rounded-full bg-[#87A922] inline-block animate-pulse"></span>
-          SESUAI SYARIAT • AMANAH • TRANSPARAN • AKUNTABEL • TEPAT SASARAN
+          MANAJEMEN MDT • MEDIA AJAR DIGITAL • PANITIA PEMBANGUNAN • KAS KEUANGAN TERBUKA
           <span className="h-2 w-2 rounded-full bg-white inline-block"></span>
-          UNIT DI BAWAH YAYASAN AL HAMID HADUM
+          STANDAR OPERASIONAL PROSEDUR (SOP) KEMENAG RI
           <span className="h-2 w-2 rounded-full bg-[#FCDC2A] inline-block"></span>
         </span>
         <span className="mx-4 text-xs font-mono font-bold tracking-widest text-[#FCDC2A] uppercase flex items-center gap-2" aria-hidden="true">
-          🌙 PANITIA PEMBANGUNGAN MDT AL JIHAD BANYURESMI GARUT
+          🌙 MADRASAH DINIYYAH TAKMILIYYAH (MDT) ALJIHAD BANYURESMI GARUT
           <span className="h-2 w-2 rounded-full bg-[#87A922] inline-block animate-pulse"></span>
-          SESUAI SYARIAT • AMANAH • TRANSPARAN • AKUNTABEL • TEPAT SASARAN
+          MANAJEMEN MDT • MEDIA AJAR DIGITAL • PANITIA PEMBANGUNAN • KAS KEUANGAN TERBUKA
           <span className="h-2 w-2 rounded-full bg-white inline-block"></span>
-          UNIT DI BAWAH YAYASAN AL HAMID HADUM
+          STANDAR OPERASIONAL PROSEDUR (SOP) KEMENAG RI
           <span className="h-2 w-2 rounded-full bg-[#FCDC2A] inline-block"></span>
         </span>
       </div>
@@ -41,15 +41,20 @@ export const MovingTitle: React.FC = () => {
 
 export const PulseTitle: React.FC = () => {
   return (
-    <div className="text-center py-8 select-none">
+    <div className="text-center py-6 select-none">
       <h1 className="text-4xl md:text-5xl font-black tracking-tight mb-2">
         <span className="inline-block animate-pulse-glow bg-gradient-to-r from-[#114232] via-[#87A922] to-[#b8860b] bg-clip-text text-transparent font-sans uppercase">
-          PANITIA PEMBANGUNGAN MDT AL JIHAD
+          MDT ALJIHAD GARUT
         </span>
       </h1>
-      <p className="text-[#1a3c34]/80 text-xs font-mono tracking-widest uppercase font-semibold">
-        Sistem Transparansi Kas Pembangunan & Rehabilitasi — Garut, Jawa Barat
+      <p className="text-[#1a3c34]/90 text-xs md:text-sm font-mono tracking-widest uppercase font-bold">
+        Sistem Manajemen MDT, Media Ajar Kitab Digital, Panitia Pembangunan & Transparansi Kas Keuangan
       </p>
+      <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 bg-emerald-900/10 border border-emerald-800/30 rounded-full text-[11px] font-mono text-emerald-900 font-semibold">
+        <span>🕌 SOP Diniyah Takmiliyah Kemenag RI</span>
+        <span>•</span>
+        <span>Banyuresmi Garut</span>
+      </div>
     </div>
   );
 };

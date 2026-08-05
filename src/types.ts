@@ -107,3 +107,71 @@ export interface ProjectProgress {
   uploadedBy: string;
 }
 
+export interface Santri {
+  id: string;
+  nis: string;
+  name: string;
+  jenjang: 'Ula' | 'Wustha' | 'Ulya';
+  kelas: string; // e.g. '1 Ula A', '2 Ula B'
+  gender?: 'L' | 'P';
+  parentName: string;
+  waliName?: string;
+  parentPhone?: string;
+  waliPhone?: string;
+  status: 'Aktif' | 'Lulus' | 'Mutasi';
+  hafalanJuzAmma?: string;
+  hafalanTarget?: string;
+  alamat?: string;
+  createdAt?: string;
+}
+
+export interface Asatidzah {
+  id: string;
+  npk: string;
+  name: string;
+  subject: string; // Mapel yang diampu
+  mataPelajaran?: string;
+  jabatan?: string;
+  phone: string;
+  education: string;
+  pendidikan?: string;
+  status: 'Aktif' | 'Cuti' | 'Non-Aktif';
+  createdAt?: string;
+}
+
+export interface LearningMedia {
+  id: string;
+  title: string;
+  category: string;
+  kategori?: string;
+  author: string;
+  pengarang?: string;
+  description: string;
+  contentSummary: string; // Teks ringkasan/matan/terjemah
+  ringkasan?: string;
+  matanArab?: string;
+  terjemahan?: string;
+  fileUrl?: string;
+  mediaUrl?: string;
+  type: 'kitab' | 'video' | 'audio' | 'modul';
+  mediaType?: 'kitab' | 'video' | 'audio' | 'modul' | 'pdf';
+  jenjangTarget?: string;
+  downloadable?: boolean;
+  createdAt?: string;
+}
+
+export interface RaporSantri {
+  id: string;
+  santriId?: string;
+  santriName: string;
+  nis: string;
+  kelas: string;
+  semester: 'Ganjil' | 'Genap';
+  tahunAjaran: string;
+  akhlak?: 'Mumtaz' | 'Jayyid' | 'Maqbul';
+  kehadiran?: number;
+  nilai: Record<string, number>;
+  catatanUstadz: string;
+  createdAt?: string;
+}
+
